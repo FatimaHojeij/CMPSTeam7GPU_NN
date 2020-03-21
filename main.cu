@@ -13,12 +13,13 @@ int main(int argc, char** argv) {
     cudaDeviceSynchronize();
 
     // Parse arguments
-    const char*  inputDirectory = "data";
-    unsigned int numLayers = 120;
-    unsigned int neuronsPerLayer = 1024;
-    float        bias = -0.3;
+	//default values if no argument provided
+    const char*  inputDirectory = "data"; // get from directory dataset
+    unsigned int numLayers = 120; // 120 layers
+    unsigned int neuronsPerLayer = 1024; // 1024 neurons in a layer
+    float  bias = -0.3; // bias term
     int opt;
-    while((opt = getopt(argc, argv, "d:l:n:b:")) >= 0) {
+    while((opt = getopt(argc, argv, "d:l:n:b:")) >= 0) { //command line if arguments provided
         switch(opt) {
             case 'd': inputDirectory  = optarg;       break;
             case 'l': numLayers       = atoi(optarg); break;
@@ -40,24 +41,24 @@ int main(int argc, char** argv) {
         snprintf(layerFileName[layer], fileNameMaxSize, "%s/neuron%d/n%d-l%d.tsv", inputDirectory, neuronsPerLayer, neuronsPerLayer, layer + 1);
     }
 
-    // Read feature vectors
+    // Read feature vectors  , reads X
     Timer timer;
     startTime(&timer);
     COOMatrix* featureVectors = createCOOFromFile(inputFileName, neuronsPerLayer);
     stopTimeAndPrint(&timer, "Reading feature vectors from file");
 
-    // Read layer weight
-    COOMatrix* layerWeights[numLayers]; 
+    // Read layer weight, reads W
+    COOMatrix* layerWeights[numLayers]; // 120 layers -> 120 W's
     startTime(&timer);
     unsigned int numEdges =0;
-    for(unsigned int layer = 0; layer < numLayers; ++layer) {
-        layerWeights[layer] = createCOOFromFile(layerFileName[layer], neuronsPerLayer);
+    for(unsigned int layer = 0; layer < numLayers; ++layer) { //as much as we have layers , we have weight matrices
+        layerWeights[layer] = createCOOFromFile(layerFileName[layer], neuronsPerLayer); // convert the W matrix as COO
         numEdges += layerWeights[layer]->nnz;
     }
     stopTimeAndPrint(&timer, "Reading layer weights from file");
     printf("Layers: %d, neurons/layer: %d, edges: %d\n", numLayers, neuronsPerLayer, numEdges);
 
-    // Allocate output vector
+    // Allocate output vector , final Y vector
     startTime(&timer);
     Vector* scores = createEmptyVector(featureVectors->numRows);
     stopTimeAndPrint(&timer, "Allocating output vector");
