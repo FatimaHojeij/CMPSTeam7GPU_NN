@@ -8,11 +8,77 @@
 
 #define THRESHOLD 0.000001
 #define YMAX 32
-#define threads 1024
+#define threads 512
 
 
-__global__ void spmspm(CSRMatrix *result, CSRMatrix *A, CSCMatrix *B, float bias) {
+__global__ void spmspm(CSRMatrix *result, CSRMatrix *A, CSCMatrix *B, float bias, unsigned int *nnzIdx) {
+    unsigned int r= blockIdx.y*blockDim.y +threadIdx.y;
+    unsigned int c= blockIdx.x*blockDim.x + threadIdx.x;
 
+	__shared__ unsigned int rowPtrA;
+	__shared__ unsigned int nnzA;
+
+	if(r < A->numRows){
+
+		rowPtrA = A->rowPtrs[r];
+		nnzA = A->rowPtrs[r + 1] - rowPtrA;
+			
+
+
+		if(nnzA>0) { // if a row is not all zeros , we do computation otherwise we skip row
+			//ptrs to cols and vals of A[r]
+			unsigned int* colIdxsA = A->colIdxs + rowPtrA;
+			float* valueA = A->values + rowPtrA;
+
+
+			// loops over the columns of B
+
+			unsigned int colPtrB = B->colPtrs[c];
+			unsigned int nnzB = B->colPtrs[c + 1] - colPtrB;
+
+
+			if( c < B->numCols) {
+                if(nnzB>0) { // if a col in B is not all zeros, we do computation otherwise skip
+                    unsigned int* rowIdxsB = B->rowIdxs + colPtrB;
+                    float* valueB = B->values + colPtrB;
+                    // Loop and find intersection
+                    float sum = 0.0f;
+                    unsigned int ia = 0, ib = 0;
+                    while(ia < nnzA && ib < nnzB) { // loops over all non zeros from A and B and stop when there is no more non zero
+                        unsigned int colIdx = colIdxsA[ia]; //single item col index from A
+                        unsigned int rowIdx = rowIdxsB[ib]; //single item row index from B
+                        if(colIdx < rowIdx) {
+                            ia++;
+                        } else if(colIdx > rowIdx) {
+                            ib++;
+                        } else {
+                            sum += valueA[ia]*valueB[ib];// do the multiplication of the row that matches the column 
+                            ia++;
+                            ib++;
+                        }
+					}
+					if(sum > THRESHOLD || sum < -THRESHOLD) { //if not smaller than abs(threshold)
+                        sum += bias; //add to it the bias
+                        //Remove negative and zero values
+                        if(sum > 0) {//if end result is positive otherwise I also do not want to add it to result
+							if(sum>YMAX) { //make sure it is on an upper limit
+                                sum = YMAX;
+                            }
+                            if(*nnzIdx >= result->capacity) { // if you fill the whole capacity for the result
+                                expandCSRCapacity(result, 2*result->capacity);//expand result by double it's original capacity
+                            }
+                            result->colIdxs[*nnzIdx] = c;
+                            result->values[*nnzIdx] = sum;
+                            AtomicAdd(nnzIdx,1); //counts how many non zero elements I have 
+                        }    
+                    }
+				}
+				result->rowPtrs[r + 1] = *nnzIdx;//takes care of row ptr for result ()
+				__syncthreads();
+			}
+		}
+		result->nnz = *nnzIdx;
+	}
 
 	
 
@@ -142,13 +208,15 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		// SpMSpM
 		printf("Computing layer %u (SpMSpM)", layer);
 		startTime(&timer);
-		
+		unsigned int nnzIdx=0;
 		
 		//do kernel call instead
-		int outputSize = inBuffer_d->numRows * W_d[layer]->numCols;
-		int numThreadsPerBlock = threads;
-		int numBlocks = (outputSize + numThreadsPerBlock - 1)/numThreadsPerBlock ;
-		spmspm <<<numBlocks, numThreadsPerBlock>>> (outBuffer_d,inBuffer_d,W_d[layer],bias);
+		//int outputSize = inBuffer_d->numRows * W_d[layer]->numCols;
+
+		dim3 numThreadsPerBlock(threads, threads);
+		dim3 numBlocks((W_d[layer]->numCols + numThreadsPerBlock.x - 1)/numThreadsPerBlock.x,(inBuffer_d->numRows + numThreadsPerBlock.y - 1)/numThreadsPerBlock.y);
+		//int numBlocks = (outputSize + numThreadsPerBlock - 1)/numThreadsPerBlock ;
+		spmspm <<<numBlocks, numThreadsPerBlock>>> (outBuffer_d,inBuffer_d,W_d[layer],bias,&nnzIdx);
 		
 		cudaDeviceSynchronize();
 		stopTimeAndPrint(&timer, "");
