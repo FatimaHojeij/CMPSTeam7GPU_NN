@@ -64,9 +64,9 @@ __global__ void spmspm(CSRMatrix *result, CSRMatrix *A, CSCMatrix *B, float bias
 							if(sum>YMAX) { //make sure it is on an upper limit
                                 sum = YMAX;
                             }
-                            if(*nnzIdx >= result->capacity) { // if you fill the whole capacity for the result
-                                expandCSRCapacity(result, 2*result->capacity);//expand result by double it's original capacity
-                            }
+                            // if(*nnzIdx >= result->capacity) { // if you fill the whole capacity for the result
+                            //     expandCSRCapacity(result, 2*result->capacity);//expand result by double it's original capacity
+                            // }
                             result->colIdxs[*nnzIdx] = c;
                             result->values[*nnzIdx] = sum;
                             AtomicAdd(nnzIdx,1); //counts how many non zero elements I have 
@@ -163,9 +163,9 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		W_d[layer]->numCols = W[layer]->numCols;
 		W_d[layer]->nnz = W[layer]->nnz;
 		W_d[layer]->capacity = W[layer]->capacity;
-		cudaMalloc((void**)&W[layer]_d->colPtrs, W[layer]_d->numCols * sizeof(unsigned int));
-		cudaMalloc((void**)&W[layer]_d->rowIdxs, W[layer_d]->numRows * sizeof(unsigned int));
-		cudaMalloc((void**)&W[layer]_d->values, W[layer_d]->numRows * sizeof(float));
+		cudaMalloc((void**)&W_d[layer]->colPtrs, W[layer]->numCols * sizeof(unsigned int));
+		cudaMalloc((void**)&W_d[layer]->rowIdxs, W[layer]->numRows * sizeof(unsigned int));
+		cudaMalloc((void**)&W_d[layer]->values, W[layer]->numRows * sizeof(float));
 	}
 
 	cudaDeviceSynchronize();
@@ -176,7 +176,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 	startTime(&timer);
 	
 	//for result
-	cudaMemcpy(result_d->data, result->data, result_d->capacity * sizeof(unsigned int), cudaMemcpyHostToDevice);
+	//cudaMemcpy(result_d->data, result->data, result_d->capacity * sizeof(unsigned int), cudaMemcpyHostToDevice);
 	
 
 	//for inbuffer
