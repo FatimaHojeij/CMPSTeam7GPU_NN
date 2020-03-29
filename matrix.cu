@@ -207,6 +207,7 @@ void expandCSRCapacity(CSRMatrix* A, unsigned int capacity) {
     }
 }
 
+
 void freeCSR(CSRMatrix* csr) {
     free(csr->rowPtrs);
     free(csr->colIdxs);
