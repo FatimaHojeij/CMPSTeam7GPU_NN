@@ -1,4 +1,4 @@
-
+// row+1; swapping; nnzidx; syncthreads
 #include <stdio.h>
 
 #include "kernel.h"
@@ -15,30 +15,35 @@ __global__ void spmspm(CSRMatrix *result, CSRMatrix *A, CSCMatrix *B, float bias
     unsigned int r= blockIdx.y*blockDim.y +threadIdx.y;
     unsigned int c= blockIdx.x*blockDim.x + threadIdx.x;
 
-	__shared__ unsigned int rowPtrA;
-	__shared__ unsigned int nnzA;
+	unsigned int rowPtrA;
+	unsigned int nnzA;
 
 	if(r < A->numRows){
 
 		rowPtrA = A->rowPtrs[r];
+
 		nnzA = A->rowPtrs[r + 1] - rowPtrA;
 			
 
 
 		if(nnzA>0) { // if a row is not all zeros , we do computation otherwise we skip row
+			printf("nnzA %d\n", nnzA);
+
 			//ptrs to cols and vals of A[r]
 			unsigned int* colIdxsA = A->colIdxs + rowPtrA;
 			float* valueA = A->values + rowPtrA;
 
 
-			// loops over the columns of B
+			//we will take one column of B
 
 			unsigned int colPtrB = B->colPtrs[c];
 			unsigned int nnzB = B->colPtrs[c + 1] - colPtrB;
 
 
 			if( c < B->numCols) {
-                if(nnzB>0) { // if a col in B is not all zeros, we do computation otherwise skip
+				if(nnzB>0) { // if a col in B is not all zeros, we do computation otherwise skip
+					//ptrs to rows and vals of B[c]
+					printf("nnzB %d\n", nnzB);
                     unsigned int* rowIdxsB = B->rowIdxs + colPtrB;
                     float* valueB = B->values + colPtrB;
                     // Loop and find intersection
@@ -234,7 +239,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 	// TODO
 	
-	cudaMemcpy(inBuffer->rowPtrs, inBuffer_d->rowPtrs, inBuffer_d.numRows * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+	cudaMemcpy(inBuffer->rowPtrs, inBuffer_d.rowPtrs, inBuffer_d.numRows * sizeof(unsigned int), cudaMemcpyDeviceToHost);
 	cudaMemcpy(inBuffer->colIdxs, inBuffer_d.colIdxs, inBuffer_d.numCols * sizeof(unsigned int), cudaMemcpyDeviceToHost);
 	cudaMemcpy(inBuffer->values, inBuffer_d.values, inBuffer_d.numCols * sizeof(float), cudaMemcpyDeviceToHost);
 
