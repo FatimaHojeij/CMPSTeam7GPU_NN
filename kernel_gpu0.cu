@@ -73,9 +73,12 @@ __global__ void spmspm(CSRMatrix *result, CSRMatrix *A, CSCMatrix *B, float bias
                             //     expandCSRCapacity(result, 2*result->capacity);//expand result by double it's original capacity
                             // }
                             result->colIdxs[*nnzIdx] = c;
-                            result->values[*nnzIdx] = sum;
-                            atomicAdd(nnzIdx,1); //counts how many non zero elements I have 
-                        }    
+							result->values[*nnzIdx] = sum;
+							
+							atomicAdd(nnzIdx,1); //counts how many non zero elements I have 
+						}    
+						__syncthreads();
+
                     }
 				}
 				result->rowPtrs[r + 1] = *nnzIdx;//takes care of row ptr for result ()
@@ -168,7 +171,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		W_d[layer].numCols = W[layer]->numCols;
 		W_d[layer].nnz = W[layer]->nnz;
 		W_d[layer].capacity = W[layer]->capacity;
-		cudaMalloc((void**)&W_d[layer].colPtrs, W[layer]->numCols * sizeof(unsigned int));
+		cudaMalloc((void**)&W_d[layer].colPtrs, (W[layer]->numCols+1) * sizeof(unsigned int));
 		cudaMalloc((void**)&W_d[layer].rowIdxs, W[layer]->numRows * sizeof(unsigned int));
 		cudaMalloc((void**)&W_d[layer].values, W[layer]->numRows * sizeof(float));
 	}
