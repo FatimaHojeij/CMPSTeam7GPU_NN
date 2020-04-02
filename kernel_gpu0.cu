@@ -91,9 +91,9 @@ COOMatrix sortCOO(COOMatrix A){
 	 for (unsigned int i = 0; i < A.nnz; i++)   
 	 for (unsigned int j = 0; j < A.nnz-i-1; j++)  
 	 {    if (A.rowIdxs[j] > A.rowIdxs[j+1]){  
-			  int r = A.rowIdxs[j];
-			  int c =  A.colIdxs[j];
-			  int v = A.values[j];
+			  unsigned int r = A.rowIdxs[j];
+			  unsigned int c =  A.colIdxs[j];
+			  float v = A.values[j];
 			  A.rowIdxs[j] = A.rowIdxs[j+1];
 			  A.colIdxs[j] = A.colIdxs[j+1];
 			  A.values[j] = A.values[j+1];
@@ -115,8 +115,8 @@ COOMatrix sortCOO(COOMatrix A){
 			 for(int k = begin ;  k< i + begin; k++)
 			 for (int m = begin ; m < i + begin - k -1 ;m++)
 			 if(A.colIdxs[m] > A.colIdxs[m+1]){
-				 int c = A.colIdxs[m];
-				 int v = A.values[m];
+				 unsigned int c = A.colIdxs[m];
+				 float v = A.values[m];
 				 A.colIdxs[m] = A.colIdxs[m+1];
 				 A.values[m] = A.values[m+1];
 				 A.colIdxs[m+1] =c;
@@ -305,7 +305,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		outBuffer->numRows = outBuffer_d.numRows ;
 		outBuffer->numCols = outBuffer_d.numCols ;
 		outBuffer->nnz = outBuffer_d.nnz;
-		cudaMemcpy(outBuffer->rowIdx, outBuffer_d.rowIdxs, outBuffer_d.capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+		cudaMemcpy(outBuffer->rowIdxs, outBuffer_d.rowIdxs, outBuffer_d.capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
 		cudaMemcpy(outBuffer->colIdxs, outBuffer_d.colIdxs, outBuffer_d.capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
 		cudaMemcpy(outBuffer->values, outBuffer_d.values, outBuffer_d.capacity * sizeof(float), cudaMemcpyDeviceToHost);
 
@@ -366,7 +366,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 	cudaFree(inBuffer_d.rowPtrs);
 	cudaFree(inBuffer_d.colIdxs);
 	cudaFree(inBuffer_d.values);
-	cudaFree(outBuffer_d.rowIdx);
+	cudaFree(outBuffer_d.rowIdxs);
 	cudaFree(outBuffer_d.colIdxs);
 	cudaFree(outBuffer_d.values);
 	for (unsigned int layer = 0; layer < numLayers; ++layer) {
