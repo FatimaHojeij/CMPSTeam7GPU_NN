@@ -11,14 +11,14 @@
 #define threads 512
 
 
-__global__ void spmspm(CSRMatrix *result, CSRMatrix *A, CSCMatrix *B, float bias, unsigned int *nnzIdx) {
+__global__ void spmspm(COOMatrix *result, CSRMatrix *A, CSCMatrix *B, float bias, unsigned int *nnzIdx) {
     unsigned int r= blockIdx.y*blockDim.y +threadIdx.y;
     unsigned int c= blockIdx.x*blockDim.x + threadIdx.x;
 
 	unsigned int rowPtrA;
 	unsigned int nnzA;
 
-	if(r < A->numRows){
+	if(r < A->numRows && c < B->numCols){
 
 		rowPtrA = A->rowPtrs[r];
 
@@ -27,7 +27,7 @@ __global__ void spmspm(CSRMatrix *result, CSRMatrix *A, CSCMatrix *B, float bias
 
 
 		if(nnzA>0) { // if a row is not all zeros , we do computation otherwise we skip row
-			printf("nnzA %d\n", nnzA);
+			
 
 			//ptrs to cols and vals of A[r]
 			unsigned int* colIdxsA = A->colIdxs + rowPtrA;
@@ -39,11 +39,9 @@ __global__ void spmspm(CSRMatrix *result, CSRMatrix *A, CSCMatrix *B, float bias
 			unsigned int colPtrB = B->colPtrs[c];
 			unsigned int nnzB = B->colPtrs[c + 1] - colPtrB;
 
-
-			if( c < B->numCols) {
 				if(nnzB>0) { // if a col in B is not all zeros, we do computation otherwise skip
 					//ptrs to rows and vals of B[c]
-					printf("nnzB %d\n", nnzB);
+					
                     unsigned int* rowIdxsB = B->rowIdxs + colPtrB;
                     float* valueB = B->values + colPtrB;
                     // Loop and find intersection
@@ -72,20 +70,16 @@ __global__ void spmspm(CSRMatrix *result, CSRMatrix *A, CSCMatrix *B, float bias
                             // if(*nnzIdx >= result->capacity) { // if you fill the whole capacity for the result
                             //     expandCSRCapacity(result, 2*result->capacity);//expand result by double it's original capacity
                             // }
-                            result->colIdxs[*nnzIdx] = c;
-							result->values[*nnzIdx] = sum;
-							
-							atomicAdd(nnzIdx,1); //counts how many non zero elements I have 
-						}    
-						__syncthreads();
-
+                            unsigned int nnzIndxTemp = atomicAdd(nnzIdx,1); //counts how many non zero elements I have
+							result->rowIdxs[nnzIndxTemp] = r;
+							result->colIdxs[nnzIndxTemp] = c;
+                            result->values[nnzIndxTemp] = sum;							
+                        }    
                     }
 				}
-				result->rowPtrs[r + 1] = *nnzIdx;//takes care of row ptr for result ()
 				__syncthreads();
-			}
+				result->nnz = *nnzIdx;
 		}
-		result->nnz = *nnzIdx;
 	}
 
 	
@@ -109,6 +103,18 @@ void findNonzeroRows(Vector* v, CSRMatrix* A) {
 	v->nnz = nnz;
 }
 
+COOMatrix* createEmptyCOO(unsigned int numRows, unsigned int numCols, unsigned int capacity) {
+    COOMatrix *coo = (COOMatrix *)malloc(sizeof(COOMatrix));
+    coo->rowIdxs= (unsigned int *)calloc((capacity) * sizeof(unsigned int));
+    coo->colIdxs= (unsigned int *)calloc((capacity) * sizeof(unsigned int));
+    coo->values= (float *)malloc( capacity * sizeof(float));
+    coo->numRows = numRows;
+    coo->numCols = numCols;
+    coo->nnz = 0;
+    coo->capacity = capacity;
+    return coo;
+}
+
 void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeights, float bias, unsigned int numLayers) {
 	
 	Timer timer;
@@ -128,7 +134,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 	// Double buffers
 	startTime(&timer);
-	CSRMatrix *tmp = createEmptyCSR(Y0->numRows, Y0->numCols, 2 * Y0->nnz);
+	CSRMatrix *tmp = createEmptyCOO(Y0->numRows, Y0->numCols, 5 * Y0->nnz);
 	CSRMatrix *inBuffer = Y0;
 	CSRMatrix *outBuffer = tmp;
 	stopTimeAndPrint(&timer, "Allocate temporary buffer");
@@ -171,7 +177,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		W_d[layer].numCols = W[layer]->numCols;
 		W_d[layer].nnz = W[layer]->nnz;
 		W_d[layer].capacity = W[layer]->capacity;
-		cudaMalloc((void**)&W_d[layer].colPtrs, (W[layer]->numCols+1) * sizeof(unsigned int));
+		cudaMalloc((void**)&W_d[layer].colPtrs, W[layer]->numCols * sizeof(unsigned int));
 		cudaMalloc((void**)&W_d[layer].rowIdxs, W[layer]->numRows * sizeof(unsigned int));
 		cudaMalloc((void**)&W_d[layer].values, W[layer]->numRows * sizeof(float));
 	}
@@ -209,7 +215,10 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 	printElapsedTime(timer, "Copy to GPU time");
 
 	//kernel loop
-
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Loop over layers
 	for (unsigned int layer = 0; layer < numLayers; ++layer) {
 
@@ -235,6 +244,12 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		outBuffer_d = t;
 
 	}
+	
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 	
 	// Copy data from GPU
