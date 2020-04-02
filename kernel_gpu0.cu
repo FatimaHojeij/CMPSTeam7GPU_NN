@@ -77,11 +77,11 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
                         }    
                     }
 				}
-				__syncthreads();
-				result->nnz = *nnzIdx;
+
 		}
 	}
-
+	__syncthreads();
+	result->nnz = *nnzIdx;
 	
 
 }
