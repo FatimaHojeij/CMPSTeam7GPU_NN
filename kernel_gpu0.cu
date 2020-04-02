@@ -120,7 +120,7 @@ COOMatrix sortCOO(COOMatrix A){
 				 A.colIdxs[m] = A.colIdxs[m+1];
 				 A.values[m] = A.values[m+1];
 				 A.colIdxs[m+1] =c;
-				 A.rowIdxs = v;
+				 A.values[m+1] = v;
  
 			 }    
  
