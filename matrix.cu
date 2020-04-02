@@ -136,6 +136,8 @@ void freeCOO(COOMatrix* coo) {
     free(coo);
 }
 
+
+
 CSRMatrix* createCSRfromCOO(COOMatrix* A) {
 
     // Allocate

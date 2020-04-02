@@ -11,18 +11,18 @@
 #define threads 512
 
 
-__global__ void spmspm(COOMatrix *result, CSRMatrix *A, CSCMatrix *B, float bias, unsigned int *nnzIdx) {
+__global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, unsigned int *nnzIdx) {
     unsigned int r= blockIdx.y*blockDim.y +threadIdx.y;
     unsigned int c= blockIdx.x*blockDim.x + threadIdx.x;
 
 	unsigned int rowPtrA;
 	unsigned int nnzA;
 
-	if(r < A->numRows && c < B->numCols){
+	if(r < A.numRows && c < B.numCols){
 
-		rowPtrA = A->rowPtrs[r];
+		rowPtrA = A.rowPtrs[r];
 
-		nnzA = A->rowPtrs[r + 1] - rowPtrA;
+		nnzA = A.rowPtrs[r + 1] - rowPtrA;
 			
 
 
@@ -30,20 +30,20 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix *A, CSCMatrix *B, float bias
 			
 
 			//ptrs to cols and vals of A[r]
-			unsigned int* colIdxsA = A->colIdxs + rowPtrA;
-			float* valueA = A->values + rowPtrA;
+			unsigned int* colIdxsA = A.colIdxs + rowPtrA;
+			float* valueA = A.values + rowPtrA;
 
 
 			//we will take one column of B
 
-			unsigned int colPtrB = B->colPtrs[c];
-			unsigned int nnzB = B->colPtrs[c + 1] - colPtrB;
+			unsigned int colPtrB = B.colPtrs[c];
+			unsigned int nnzB = B.colPtrs[c + 1] - colPtrB;
 
 				if(nnzB>0) { // if a col in B is not all zeros, we do computation otherwise skip
 					//ptrs to rows and vals of B[c]
 					
-                    unsigned int* rowIdxsB = B->rowIdxs + colPtrB;
-                    float* valueB = B->values + colPtrB;
+                    unsigned int* rowIdxsB = B.rowIdxs + colPtrB;
+                    float* valueB = B.values + colPtrB;
                     // Loop and find intersection
                     float sum = 0.0f;
                     unsigned int ia = 0, ib = 0;
@@ -85,7 +85,56 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix *A, CSCMatrix *B, float bias
 	
 
 }
+COOMatrix sortCOO(COOMatrix A){
 
+	// sorting rows  
+	 for (unsigned int i = 0; i < A.nnz; i++)   
+	 for (unsigned int j = 0; j < A.nnz-i-1; j++)  
+	 {    if (A.rowIdxs[j] > A.rowIdxs[j+1]){  
+			  int r = A.rowIdxs[j];
+			  int c =  A.colIdxs[j];
+			  int v = A.values[j];
+			  A.rowIdxs[j] = A.rowIdxs[j+1];
+			  A.colIdxs[j] = A.colIdxs[j+1];
+			  A.values[j] = A.values[j+1];
+			 A.rowIdxs[j+1] = r;
+			 A.colIdxs[j+1] = c;
+			 A.values[j+1] = v;
+		 }
+	 }
+ 
+	 // sorting the col
+	// int count = 0;
+	 int begin = 0;
+	 for(unsigned int i  = 0 ;  i < A.nnz -1 ; i++)
+	 {
+		 //count++;
+		 if(A.rowIdxs[i] != A.rowIdxs[i+1])   
+		 {
+			 //sort the col
+			 for(int k = begin ;  k< i + begin; k++)
+			 for (int m = begin ; m < i + begin - k -1 ;m++)
+			 if(A.colIdxs[m] > A.colIdxs[m+1]){
+				 int c = A.colIdxs[m];
+				 int v = A.values[m];
+				 A.colIdxs[m] = A.colIdxs[m+1];
+				 A.values[m] = A.values[m+1];
+				 A.colIdxs[m+1] =c;
+				 A.rowIdxs = v;
+ 
+			 }    
+ 
+			// count = 0;
+			 begin= i+1;
+		 }
+			 
+ 
+	 }
+	 return A;
+	 
+ 
+	 
+ }
 //converts from CSRMatrix to Vector and a vector of indices where the row is not all zeros
 void findNonzeroRows(Vector* v, CSRMatrix* A) {
 	unsigned int nnz = 0;
@@ -134,9 +183,9 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 	// Double buffers
 	startTime(&timer);
-	CSRMatrix *tmp = createEmptyCOO(Y0->numRows, Y0->numCols, 5 * Y0->nnz);
+	COOMatrix *tmp = createEmptyCOO(Y0->numRows, Y0->numCols, 5 * Y0->nnz);
 	CSRMatrix *inBuffer = Y0;
-	CSRMatrix *outBuffer = tmp;
+	COOMatrix *outBuffer = tmp;
 	stopTimeAndPrint(&timer, "Allocate temporary buffer");
 
 
@@ -160,15 +209,29 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 	cudaMalloc((void**)&inBuffer_d.colIdxs, inBuffer_d.numCols * sizeof(unsigned int));
 	cudaMalloc((void**)&inBuffer_d.values, inBuffer_d.numCols * sizeof(float));
 
+	/*
+	typedef struct COOMatrix {
+    unsigned int numRows;
+    unsigned int numCols;
+    unsigned int nnz;
+    unsigned int capacity;
+    unsigned int* rowIdxs;
+    unsigned int* colIdxs;
+    float* values;
+	} COOMatrix;
+	
+	*/
+
+
 	//outBuffer_d allocation
-	CSRMatrix outBuffer_d;
+	COOMatrix outBuffer_d;
 	outBuffer_d.numRows = outBuffer->numRows;
 	outBuffer_d.numCols = outBuffer->numCols;
 	outBuffer_d.nnz = outBuffer->nnz;
 	outBuffer_d.capacity = outBuffer->capacity;
-	cudaMalloc((void**)&outBuffer_d.rowPtrs, (outBuffer_d.numRows + 1) * sizeof(unsigned int));
-	cudaMalloc((void**)&outBuffer_d.colIdxs, outBuffer_d.numCols * sizeof(unsigned int));
-	cudaMalloc((void**)&outBuffer_d.values, outBuffer_d.numCols * sizeof(float));
+	cudaMalloc((void**)&outBuffer_d.rowIdxs, (outBuffer_d.capacity) * sizeof(unsigned int));
+	cudaMalloc((void**)&outBuffer_d.colIdxs, outBuffer_d.capacity * sizeof(unsigned int));
+	cudaMalloc((void**)&outBuffer_d.values, outBuffer_d.capacity * sizeof(float));
 
 	// allocating W_d 
 	CSCMatrix W_d[numLayers];
@@ -199,9 +262,9 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 	cudaMemcpy(inBuffer_d.values, inBuffer->values, inBuffer_d.numCols * sizeof(float), cudaMemcpyHostToDevice);
 
 	//for outbuffer
-	cudaMemcpy(outBuffer_d.rowPtrs, outBuffer->rowPtrs, outBuffer_d.numRows * sizeof(unsigned int), cudaMemcpyHostToDevice);
-	cudaMemcpy(outBuffer_d.colIdxs, outBuffer->colIdxs, outBuffer_d.numCols * sizeof(unsigned int), cudaMemcpyHostToDevice);
-	cudaMemcpy(outBuffer_d.values, outBuffer->values, outBuffer_d.numCols * sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(outBuffer_d.rowIdxs, outBuffer->rowPtrs, outBuffer_d.capacity * sizeof(unsigned int), cudaMemcpyHostToDevice);
+	cudaMemcpy(outBuffer_d.colIdxs, outBuffer->colIdxs, outBuffer_d.capacity	 * sizeof(unsigned int), cudaMemcpyHostToDevice);
+	cudaMemcpy(outBuffer_d.values, outBuffer->values, outBuffer_d.capacity * sizeof(float), cudaMemcpyHostToDevice);
 
 	//for Weights
 	for (unsigned int layer = 0; layer < numLayers; ++layer) {
@@ -233,15 +296,40 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		dim3 numThreadsPerBlock(threads, threads);
 		dim3 numBlocks((W_d[layer].numCols + numThreadsPerBlock.x - 1)/numThreadsPerBlock.x,(inBuffer_d.numRows + numThreadsPerBlock.y - 1)/numThreadsPerBlock.y);
 		//int numBlocks = (outputSize + numThreadsPerBlock - 1)/numThreadsPerBlock ;
-		spmspm <<<numBlocks, numThreadsPerBlock>>> (&outBuffer_d,&inBuffer_d,&W_d[layer],bias,&nnzIdx);
+		spmspm <<<numBlocks, numThreadsPerBlock>>> (&outBuffer_d,inBuffer_d,W_d[layer],bias,&nnzIdx);
 		
 		cudaDeviceSynchronize();
 		stopTimeAndPrint(&timer, "");
 
-		// Swap buffers
-		CSRMatrix t = inBuffer_d;
-		inBuffer_d = outBuffer_d;
-		outBuffer_d = t;
+
+		outBuffer->numRows = outBuffer_d.numRows ;
+		outBuffer->numCols = outBuffer_d.numCols ;
+		outBuffer->nnz = outBuffer_d.nnz;
+		cudaMemcpy(outBuffer->rowPtrs, outBuffer_d.rowIdxs, outBuffer_d.capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+		cudaMemcpy(outBuffer->colIdxs, outBuffer_d.colIdxs, outBuffer_d.capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+		cudaMemcpy(outBuffer->values, outBuffer_d.values, outBuffer_d.capacity * sizeof(float), cudaMemcpyDeviceToHost);
+
+		
+		inBuffer = createCSRfromCOO(&sortCOO(*outBuffer));
+		
+
+		inBuffer_d.numRows = inBuffer->numRows;
+		inBuffer_d.numCols = inBuffer->numCols;
+		inBuffer_d.nnz = inBuffer->nnz;
+		inBuffer_d.capacity = inBuffer->capacity;
+		cudaMemcpy(inBuffer_d.rowPtrs, inBuffer->rowPtrs, inBuffer_d.numRows * sizeof(unsigned int), cudaMemcpyHostToDevice);
+		cudaMemcpy(inBuffer_d.colIdxs, inBuffer->colIdxs, inBuffer_d.numCols * sizeof(unsigned int), cudaMemcpyHostToDevice);
+		cudaMemcpy(inBuffer_d.values, inBuffer->values, inBuffer_d.numCols * sizeof(float), cudaMemcpyHostToDevice);
+
+
+		outBuffer = createEmptyCOO(inBuffer->numRows, inBuffer->numCols, 2*inBuffer->capacity);
+		outBuffer_d.numRows = outBuffer->numRows;
+		outBuffer_d.numCols = outBuffer->numCols;
+		outBuffer_d.nnz = outBuffer->nnz;
+		outBuffer_d.capacity = outBuffer->capacity;
+		cudaMemcpy(outBuffer_d.rowIdxs, outBuffer->rowPtrs, outBuffer_d.capacity * sizeof(unsigned int), cudaMemcpyHostToDevice);
+		cudaMemcpy(outBuffer_d.colIdxs, outBuffer->colIdxs, outBuffer_d.capacity	 * sizeof(unsigned int), cudaMemcpyHostToDevice);
+		cudaMemcpy(outBuffer_d.values, outBuffer->values, outBuffer_d.capacity * sizeof(float), cudaMemcpyHostToDevice);
 
 	}
 	
