@@ -11,7 +11,7 @@
 #define threads 512
 
 
-__global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, unsigned int *nnzIdx) {
+__global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias) {
     unsigned int r= blockIdx.y*blockDim.y +threadIdx.y;
     unsigned int c= blockIdx.x*blockDim.x + threadIdx.x;
 
@@ -70,7 +70,7 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
                             // if(*nnzIdx >= result->capacity) { // if you fill the whole capacity for the result
                             //     expandCSRCapacity(result, 2*result->capacity);//expand result by double it's original capacity
                             // }
-                            unsigned int nnzIndxTemp = atomicAdd(nnzIdx,1); //counts how many non zero elements I have
+                            unsigned int nnzIndxTemp = atomicAdd(&(result->nnz),1); //counts how many non zero elements I have
                                                         result->rowIdxs[nnzIndxTemp] = r;
                                                         result->colIdxs[nnzIndxTemp] = c;
                             result->values[nnzIndxTemp] = sum;
@@ -80,8 +80,7 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
 
                 }
        }
-        __syncthreads();
-        result->nnz = *nnzIdx;
+
 
 
 }
@@ -159,23 +158,23 @@ COOMatrix* createEmptyCOO(unsigned int numRows, unsigned int numCols, unsigned i
     coo->values= (float *)malloc( capacity * sizeof(float));
     coo->numRows = numRows;
     coo->numCols = numCols;
- CSRMatrix* Y0 = createCSRfromCOO(featureVectors);
-        stopTimeAndPrint(&timer, "Convert feature vectors to CSR");
+ 	CSRMatrix* Y0 = createCSRfromCOO(featureVectors);
+	stopTimeAndPrint(&timer, "Convert feature vectors to CSR");
 
-        // Convert layer weights to CSC
-        startTime(&timer);
-        CSCMatrix* W[numLayers];
-        for (unsigned int layer = 0; layer < numLayers; ++layer) {
-                W[layer] = createCSCfromCOO(layerWeights[layer]);
-        }
-        stopTimeAndPrint(&timer, "Convert weights to CSC");
+	// Convert layer weights to CSC
+	startTime(&timer);
+	CSCMatrix* W[numLayers];
+	for (unsigned int layer = 0; layer < numLayers; ++layer) {
+			W[layer] = createCSCfromCOO(layerWeights[layer]);
+	}
+	stopTimeAndPrint(&timer, "Convert weights to CSC");
 
-        // Double buffers
-        startTime(&timer);
-        COOMatrix *tmp = createEmptyCOO(Y0->numRows, Y0->numCols, 5 * Y0->nnz);
-        CSRMatrix *inBuffer = Y0;
-        COOMatrix *outBuffer = tmp;
-        stopTimeAndPrint(&timer, "Allocate temporary buffer");
+	// Double buffers
+	startTime(&timer);
+	COOMatrix *tmp = createEmptyCOO(Y0->numRows, Y0->numCols, 5 * Y0->nnz);
+	CSRMatrix *inBuffer = Y0;
+	COOMatrix *outBuffer = tmp;
+	stopTimeAndPrint(&timer, "Allocate temporary buffer");
 
 
 
@@ -197,18 +196,6 @@ COOMatrix* createEmptyCOO(unsigned int numRows, unsigned int numCols, unsigned i
         cudaMalloc((void**)&inBuffer_d.colIdxs, inBuffer_d.numCols * sizeof(unsigned int));
         cudaMalloc((void**)&inBuffer_d.values, inBuffer_d.numCols * sizeof(float));
 
-        /*
-        typedef struct COOMatrix {
-    unsigned int numRows;
-    unsigned int numCols;
-    unsigned int nnz;
-    unsigned int capacity;
-    unsigned int* rowIdxs;
-    unsigned int* colIdxs;
-    float* values;
-        } COOMatrix;
-
-        */
 
 
         //outBuffer_d allocation
@@ -282,7 +269,7 @@ COOMatrix* createEmptyCOO(unsigned int numRows, unsigned int numCols, unsigned i
                 dim3 numThreadsPerBlock(threads, threads);
                 dim3 numBlocks((W_d[layer].numCols + numThreadsPerBlock.x - 1)/numThreadsPerBlock.x,(inBuffer_d.numRows + numThreadsPerBlock.y - 1)/numThreadsPerBlock.y);
                 //int numBlocks = (outputSize + numThreadsPerBlock - 1)/numThreadsPerBlock ;
-                spmspm <<<numBlocks, numThreadsPerBlock>>> (&outBuffer_d, inBuffer_d, W_d[layer], bias, &nnzIdx);
+                spmspm <<<numBlocks, numThreadsPerBlock>>> (&outBuffer_d, inBuffer_d, W_d[layer], bias);
                 cudaDeviceSynchronize();
                 stopTimeAndPrint(&timer, "");
 
