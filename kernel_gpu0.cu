@@ -300,10 +300,10 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
                 outBuffer_d->numCols = outBuffer->numCols;
                 outBuffer_d->nnz = outBuffer->nnz;
                 outBuffer_d->capacity = outBuffer->capacity;
-				cudaMemcpy(outBuffer_d , outBuffer, sizeof(COOMatrix), cudaMemcpyHostToDevice);
-                cudaMemcpy(outBuffer_d.rowIdxs, outBuffer->rowIdxs, outBuffer_d->capacity * sizeof(unsigned int), cudaMemcpyHostToDevice);
-                cudaMemcpy(outBuffer_d.colIdxs, outBuffer->colIdxs, outBuffer_d->capacity * sizeof(unsigned int), cudaMemcpyHostToDevice);
-                cudaMemcpy(outBuffer_d.values, outBuffer->values, outBuffer_d->capacity * sizeof(float), cudaMemcpyHostToDevice);
+				//cudaMemcpy(outBuffer_d , outBuffer, sizeof(COOMatrix), cudaMemcpyHostToDevice);
+                cudaMemcpy(outBuffer_d->rowIdxs, outBuffer->rowIdxs, outBuffer_d->capacity * sizeof(unsigned int), cudaMemcpyHostToDevice);
+                cudaMemcpy(outBuffer_d->colIdxs, outBuffer->colIdxs, outBuffer_d->capacity * sizeof(unsigned int), cudaMemcpyHostToDevice);
+                cudaMemcpy(outBuffer_d->values, outBuffer->values, outBuffer_d->capacity * sizeof(float), cudaMemcpyHostToDevice);
 
         }
 
