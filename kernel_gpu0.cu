@@ -177,11 +177,11 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
         //result_d->capacity = result->capacity;
         //cudaMalloc((void**)&result_d->data, result->capacity * sizeof(unsigned int));
      //inBuffer_d allocation
-        CSRMatrix *inBuffer_d;
-        inBuffer_d->numRows = inBuffer->numRows;
-        inBuffer_d->numCols = inBuffer->numCols;
-        inBuffer_d->nnz = inBuffer->nnz;
-        inBuffer_d->capacity = inBuffer->capacity;
+        CSRMatrix inBuffer_d;
+        inBuffer_d.numRows = inBuffer->numRows;
+        inBuffer_d.numCols = inBuffer->numCols;
+        inBuffer_d.nnz = inBuffer->nnz;
+        inBuffer_d.capacity = inBuffer->capacity;
 		//cudaMalloc((void**)&inBuffer_d, sizeof(CSRMatrix));
         cudaMalloc((void**) &inBuffer_d.rowPtrs, (inBuffer_d.numRows + 1) * sizeof(unsigned int));
         cudaMalloc((void**) &inBuffer_d.colIdxs, inBuffer_d.numCols * sizeof(unsigned int));
@@ -191,6 +191,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
         //outBuffer_d allocation
         COOMatrix *outBuffer_d;
+		outBuffer_d = outBuffer;
         outBuffer_d->numRows = outBuffer->numRows;
         outBuffer_d->numCols = outBuffer->numCols;
         outBuffer_d->nnz = outBuffer->nnz;
@@ -201,7 +202,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
         cudaMalloc((void**)&outBuffer_d->values, outBuffer->capacity * sizeof(float));
 
         // allocating W_d
-        CSCMatrix **W_d[numLayers];
+        CSCMatrix *W_d[numLayers];
 		//cudaMalloc((void**)&W_d, numLayers * sizeof(CSCMatrix));
         for (unsigned int layer = 0; layer < numLayers; ++layer) {
                 W_d[layer]->numRows = W[layer]->numRows;
