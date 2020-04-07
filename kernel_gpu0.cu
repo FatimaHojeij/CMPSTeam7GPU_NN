@@ -11,7 +11,7 @@
 #define threads 512
 
 
-__global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, int* nnz_out) {
+__global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, unsigned int* nnz_out) {
     unsigned int r= blockIdx.y*blockDim.y +threadIdx.y;
     unsigned int c= blockIdx.x*blockDim.x + threadIdx.x;
     unsigned int rowPtrA;
@@ -246,10 +246,10 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 	cudaMemcpy(out_rowIdxs_d, outBuffer->rowIdxs, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyHostToDevice);
 	cudaMemcpy(out_colIdxs_d, outBuffer->colIdxs, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyHostToDevice);
 	cudaMemcpy(out_values_d, outBuffer->values, outBuffer->capacity * sizeof(float), cudaMemcpyHostToDevice);
-        cudaMemcpy(outBuffer_d->numRows,outbuffer->numRows,sizeof(unsigned int));
-        cudaMemcpy(outBuffer_d->numCols,outbuffer->numCols,sizeof(unsigned int));
-        cudaMemcpy(outBuffer_d->nnz,outbuffer->nnz,sizeof(unsigned int));
-        cudaMemcpy(outBuffer_d->capacity,outbuffer->capacity,sizeof(unsigned int));
+        outBuffer_d->numRows=outbuffer->numRows;
+        outBuffer_d->numCols=outbuffer->numCols;
+        outBuffer_d->nnz=outbuffer->nnz;
+        outBuffer_d->capacity=outbuffer->capacity;
 
         cudaMemcpy(&(outBuffer_d->rowIdxs), &out_rowIdxs_d, sizeof(unsigned int*), cudaMemcpyHostToDevice);
 	cudaMemcpy(&(outBuffer_d->colIdxs), &out_colIdxs_d, sizeof(unsigned int*), cudaMemcpyHostToDevice);
