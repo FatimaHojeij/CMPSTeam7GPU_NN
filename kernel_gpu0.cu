@@ -17,6 +17,9 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias) 
     unsigned int c= blockIdx.x*blockDim.x + threadIdx.x;
     unsigned int rowPtrA;
     unsigned int nnzA;
+	result->rowIdxs[0] = r;
+	result->colIdxs[0] = c;
+	result->values[0] = 5;
         if(r < A.numRows && c < B.numCols){
                 rowPtrA = A.rowPtrs[r];
                 nnzA = A.rowPtrs[r + 1] - rowPtrA;
@@ -279,7 +282,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 				cudaMemcpy(&out_rowIdxs_d, &(outBuffer_d->rowIdxs), sizeof(unsigned int*), cudaMemcpyDeviceToHost);
 				cudaMemcpy(&out_colIdxs_d, &(outBuffer_d->colIdxs), sizeof(unsigned int*), cudaMemcpyDeviceToHost);
 				cudaMemcpy(&out_values_d, &(outBuffer_d->values), sizeof(float*), cudaMemcpyDeviceToHost);
-				printf("%f", outBuffer->values[1]);
+				printf("%f \n", outBuffer->values[0]);
 				break;
 		//stopTimeAndPrint(&timer, "For Sort");
         //inBuffer = createCSRfromCOO(sortCOO(outBuffer));
