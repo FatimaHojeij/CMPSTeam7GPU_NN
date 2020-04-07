@@ -219,6 +219,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
         // cudaMalloc(&outBuffer_d, sizeof(COOMatrix));
 
         // cudaMemcpy(outBuffer_d,&tmpOutBuffer,sizeof(COOMatrix),cudaMemcpyHostToDevice);
+        ////////////////////////////
         COOMatrix *outBuffer_d;
 	unsigned int* out_rowIdxs_d;
 	unsigned int* out_colIdxs_d;
@@ -227,8 +228,6 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 	cudaMalloc((void**)&out_rowIdxs_d, outBuffer->capacity * sizeof(unsigned int));
 	cudaMalloc((void**)&out_colIdxs_d, outBuffer->capacity * sizeof(unsigned int));
 	cudaMalloc((void**)&out_values_d, outBuffer->capacity * sizeof(float));
-
-
 
 	//copying outbuffer
 	cudaMemcpy(outBuffer_d, outBuffer, sizeof(COOMatrix), cudaMemcpyHostToDevice);
@@ -239,7 +238,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 	cudaMemcpy(&(outBuffer_d->colIdxs), &out_colIdxs_d, sizeof(unsigned int*), cudaMemcpyHostToDevice);
 	cudaMemcpy(&(outBuffer_d->values), &out_values_d, sizeof(float*), cudaMemcpyHostToDevice);
         printf("outbuffer allocated\n");
-
+        //////////////////////////////////
 
         
         // allocating W_d
@@ -291,8 +290,8 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
                 cudaMemcpy(outBuffer->colIdxs, out_colIdxs_d, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
                 cudaMemcpy(outBuffer->values, out_values_d, outBuffer->capacity * sizeof(float), cudaMemcpyDeviceToHost);
 
-                printf("nnz %d\n", outBuffer->nnz);
-                for(int i =0; i<outBuffer->nnz;++i){
+                printf("nnz %d\n", outBuffer_d->nnz);
+                for(int i =0; i<outBuffer_d->nnz;++i){
                         printf(" i = %d, row = %d, col = %d\n", i,outBuffer->rowIdxs[i],outBuffer->colIdxs[i]);
                 }
 
