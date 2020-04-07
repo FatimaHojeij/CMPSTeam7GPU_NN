@@ -225,7 +225,11 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
         COOMatrix *outBuffer_d;
 	unsigned int* out_rowIdxs_d;
 	unsigned int* out_colIdxs_d;
-	float* out_values_d;
+        float* out_values_d;
+        outBuffer_d->numRows = outBuffer->numRows;
+        outBuffer_d->numCols = outBuffer->numCols;
+        outBuffer_d->nnz = outBuffer->nnz;
+        outBuffer_d->capacity = outBuffer->capacity;
 	cudaMalloc((void**)&outBuffer_d, sizeof(COOMatrix));
 	cudaMalloc((void**)&out_rowIdxs_d, outBuffer->capacity * sizeof(unsigned int));
 	cudaMalloc((void**)&out_colIdxs_d, outBuffer->capacity * sizeof(unsigned int));
@@ -281,10 +285,10 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
                 spmspm <<<numBlocks, numThreadsPerBlock>>> (outBuffer_d, tmpInBuffer, W_d[layer], bias);
 
-                // outBuffer->numRows =tmpOutBuffer.numRows;
-                // outBuffer->numCols = tmpOutBuffer.numCols ;
-                // outBuffer->nnz = tmpOutBuffer.nnz ;
-                // outBuffer->capacity = tmpOutBuffer.capacity ;
+                outBuffer->numRows =tmpOutBuffer.numRows;
+                outBuffer->numCols = tmpOutBuffer.numCols ;
+                outBuffer->nnz = tmpOutBuffer.nnz ;
+                outBuffer->capacity = tmpOutBuffer.capacity ;
                 // cudaMemcpy(outBuffer->rowIdxs, tmpOutBuffer.rowIdxs,outBuffer->capacity * sizeof(unsigned int),cudaMemcpyDeviceToHost);
                 // cudaMemcpy(outBuffer->colIdxs, tmpOutBuffer.colIdxs,outBuffer->capacity * sizeof(unsigned int),cudaMemcpyDeviceToHost);
                 // cudaMemcpy(outBuffer->values, tmpOutBuffer.values,outBuffer->capacity * sizeof(unsigned int),cudaMemcpyDeviceToHost);
