@@ -64,56 +64,56 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias) 
         }
 }
 
-COOMatrix* sortCOO(COOMatrix *A){
+// COOMatrix* sortCOO(COOMatrix *A){
 
-        // sorting rows
-         for (unsigned int i = 0; i < A->nnz; i++)
-                for (unsigned int j = 0; j < A->nnz-i-1; j++)
-                {    if (A->rowIdxs[j] > A->rowIdxs[j+1]){
-                                unsigned int r = A->rowIdxs[j];
-                                unsigned int c =  A->colIdxs[j];
-                                float v = A->values[j];
-                                A->rowIdxs[j] = A->rowIdxs[j+1];
-                                A->colIdxs[j] = A->colIdxs[j+1];
-                                A->values[j] = A->values[j+1];
-                                A->rowIdxs[j+1] = r;
-                                A->colIdxs[j+1] = c;
-                                A->values[j+1] = v;
-                        }
-                }
+//         // sorting rows
+//          for (unsigned int i = 0; i < A->nnz; i++)
+//                 for (unsigned int j = 0; j < A->nnz-i-1; j++)
+//                 {    if (A->rowIdxs[j] > A->rowIdxs[j+1]){
+//                                 unsigned int r = A->rowIdxs[j];
+//                                 unsigned int c =  A->colIdxs[j];
+//                                 float v = A->values[j];
+//                                 A->rowIdxs[j] = A->rowIdxs[j+1];
+//                                 A->colIdxs[j] = A->colIdxs[j+1];
+//                                 A->values[j] = A->values[j+1];
+//                                 A->rowIdxs[j+1] = r;
+//                                 A->colIdxs[j+1] = c;
+//                                 A->values[j+1] = v;
+//                         }
+//                 }
 
-         // sorting the col
-        // int count = 0;
-         int begin = 0;
-         for(unsigned int i  = 0 ;  i < A->nnz -1 ; i++)
-         {
-                 //count++;
-                 if(A->rowIdxs[i] != A->rowIdxs[i+1])
-                 {
-                         //sort the col
-                        for(int k = begin ;  k< i + begin; k++)
-                                for (int m = begin ; m < i + begin - k -1 ;m++)
-                                        if(A->colIdxs[m] > A->colIdxs[m+1]){
-                                                unsigned int c = A->colIdxs[m];
-                                                float v = A->values[m];
-                                                A->colIdxs[m] = A->colIdxs[m+1];
-                                                A->values[m] = A->values[m+1];
-                                                A->colIdxs[m+1] =c;
-                                                A->values[m+1] = v;
+//          // sorting the col
+//         // int count = 0;
+//          int begin = 0;
+//          for(unsigned int i  = 0 ;  i < A->nnz -1 ; i++)
+//          {
+//                  //count++;
+//                  if(A->rowIdxs[i] != A->rowIdxs[i+1])
+//                  {
+//                          //sort the col
+//                         for(int k = begin ;  k< i + begin; k++)
+//                                 for (int m = begin ; m < i + begin - k -1 ;m++)
+//                                         if(A->colIdxs[m] > A->colIdxs[m+1]){
+//                                                 unsigned int c = A->colIdxs[m];
+//                                                 float v = A->values[m];
+//                                                 A->colIdxs[m] = A->colIdxs[m+1];
+//                                                 A->values[m] = A->values[m+1];
+//                                                 A->colIdxs[m+1] =c;
+//                                                 A->values[m+1] = v;
 
-                                        }
+//                                         }
 
-                        // count = 0;
-                        begin= i+1;
-                }
-
-
-        }
-        return A;
+//                         // count = 0;
+//                         begin= i+1;
+//                 }
 
 
+//         }
+//         return A;
 
- }
+
+
+//  }
 //converts from CSRMatrix to Vector and a vector of indices where the row is not all zeros
 void findNonzeroRows(Vector* v, CSRMatrix* A) {
         unsigned int nnz = 0;
@@ -201,25 +201,43 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
         printf("inbuffer allocated\n");
 
         //outBuffer_d allocation
-        COOMatrix* outBuffer_d;
-        COOMatrix tmpOutBuffer;
-        //cudaMalloc((void**)&outBuffer_d,sizeof(COOMatrix));
-        tmpOutBuffer.numRows = outBuffer->numRows;
-        tmpOutBuffer.numCols = outBuffer->numCols;
-        tmpOutBuffer.nnz = outBuffer->nnz;
-        tmpOutBuffer.capacity = outBuffer->capacity;
-        cudaMalloc((void**)&tmpOutBuffer.rowIdxs, (outBuffer->capacity) * sizeof(unsigned int));
-        cudaMalloc((void**)&tmpOutBuffer.colIdxs, outBuffer->capacity * sizeof(unsigned int));
-        cudaMalloc((void**)&tmpOutBuffer.values, outBuffer->capacity * sizeof(float));
+        // COOMatrix* outBuffer_d;
+        // COOMatrix tmpOutBuffer;
+        // //cudaMalloc((void**)&outBuffer_d,sizeof(COOMatrix));
+        // tmpOutBuffer.numRows = outBuffer->numRows;
+        // tmpOutBuffer.numCols = outBuffer->numCols;
+        // tmpOutBuffer.nnz = outBuffer->nnz;
+        // tmpOutBuffer.capacity = outBuffer->capacity;
+        // cudaMalloc((void**)&tmpOutBuffer.rowIdxs, (outBuffer->capacity) * sizeof(unsigned int));
+        // cudaMalloc((void**)&tmpOutBuffer.colIdxs, outBuffer->capacity * sizeof(unsigned int));
+        // cudaMalloc((void**)&tmpOutBuffer.values, outBuffer->capacity * sizeof(float));
         
-        cudaMemcpy(tmpOutBuffer.rowIdxs, outBuffer->rowIdxs, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyHostToDevice);
-        cudaMemcpy(tmpOutBuffer.colIdxs, outBuffer->colIdxs, outBuffer->capacity         * sizeof(unsigned int), cudaMemcpyHostToDevice);
-        cudaMemcpy(tmpOutBuffer.values, outBuffer->values, outBuffer->capacity * sizeof(float), cudaMemcpyHostToDevice);
+        // cudaMemcpy(tmpOutBuffer.rowIdxs, outBuffer->rowIdxs, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyHostToDevice);
+        // cudaMemcpy(tmpOutBuffer.colIdxs, outBuffer->colIdxs, outBuffer->capacity         * sizeof(unsigned int), cudaMemcpyHostToDevice);
+        // cudaMemcpy(tmpOutBuffer.values, outBuffer->values, outBuffer->capacity * sizeof(float), cudaMemcpyHostToDevice);
         
-        cudaMalloc(&outBuffer_d, sizeof(COOMatrix));
+        // cudaMalloc(&outBuffer_d, sizeof(COOMatrix));
 
-        cudaMemcpy(outBuffer_d,&tmpOutBuffer,sizeof(COOMatrix),cudaMemcpyHostToDevice);
-        
+        // cudaMemcpy(outBuffer_d,&tmpOutBuffer,sizeof(COOMatrix),cudaMemcpyHostToDevice);
+        COOMatrix *outBuffer_d;
+	unsigned int* out_rowIdxs_d;
+	unsigned int* out_colIdxs_d;
+	float* out_values_d;
+	cudaMalloc((void**)&outBuffer_d, sizeof(COOMatrix));
+	cudaMalloc((void**)&out_rowIdxs_d, outBuffer->capacity * sizeof(unsigned int));
+	cudaMalloc((void**)&out_colIdxs_d, outBuffer->capacity * sizeof(unsigned int));
+	cudaMalloc((void**)&out_values_d, outBuffer->capacity * sizeof(float));
+
+
+
+	//copying outbuffer
+	cudaMemcpy(outBuffer_d, outBuffer, sizeof(COOMatrix), cudaMemcpyHostToDevice);
+	cudaMemcpy(out_rowIdxs_d, outBuffer->rowIdxs, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyHostToDevice);
+	cudaMemcpy(out_colIdxs_d, outBuffer->colIdxs, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyHostToDevice);
+	cudaMemcpy(out_values_d, outBuffer->values, outBuffer->capacity * sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(&(outBuffer_d->rowIdxs), &out_rowIdxs_d, sizeof(unsigned int*), cudaMemcpyHostToDevice);
+	cudaMemcpy(&(outBuffer_d->colIdxs), &out_colIdxs_d, sizeof(unsigned int*), cudaMemcpyHostToDevice);
+	cudaMemcpy(&(outBuffer_d->values), &out_values_d, sizeof(float*), cudaMemcpyHostToDevice);
         printf("outbuffer allocated\n");
 
 
@@ -262,14 +280,17 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
                 spmspm <<<numBlocks, numThreadsPerBlock>>> (outBuffer_d, tmpInBuffer, W_d[layer], bias);
 
-                outBuffer->numRows =tmpOutBuffer.numRows;
-                outBuffer->numCols = tmpOutBuffer.numCols ;
-                outBuffer->nnz = tmpOutBuffer.nnz ;
-                outBuffer->capacity = tmpOutBuffer.capacity ;
-                cudaMemcpy(outBuffer->rowIdxs, tmpOutBuffer.rowIdxs,outBuffer->capacity * sizeof(unsigned int),cudaMemcpyDeviceToHost);
-                cudaMemcpy(outBuffer->colIdxs, tmpOutBuffer.colIdxs,outBuffer->capacity * sizeof(unsigned int),cudaMemcpyDeviceToHost);
-                cudaMemcpy(outBuffer->values, tmpOutBuffer.values,outBuffer->capacity * sizeof(unsigned int),cudaMemcpyDeviceToHost);
-                
+                // outBuffer->numRows =tmpOutBuffer.numRows;
+                // outBuffer->numCols = tmpOutBuffer.numCols ;
+                // outBuffer->nnz = tmpOutBuffer.nnz ;
+                // outBuffer->capacity = tmpOutBuffer.capacity ;
+                // cudaMemcpy(outBuffer->rowIdxs, tmpOutBuffer.rowIdxs,outBuffer->capacity * sizeof(unsigned int),cudaMemcpyDeviceToHost);
+                // cudaMemcpy(outBuffer->colIdxs, tmpOutBuffer.colIdxs,outBuffer->capacity * sizeof(unsigned int),cudaMemcpyDeviceToHost);
+                // cudaMemcpy(outBuffer->values, tmpOutBuffer.values,outBuffer->capacity * sizeof(unsigned int),cudaMemcpyDeviceToHost);
+                cudaMemcpy(outBuffer->rowIdxs, out_rowIdxs_d, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+                cudaMemcpy(outBuffer->colIdxs, out_colIdxs_d, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+                cudaMemcpy(outBuffer->values, out_values_d, outBuffer->capacity * sizeof(float), cudaMemcpyDeviceToHost);
+
                 printf("nnz %d\n", outBuffer->nnz);
                 for(int i =0; i<outBuffer->nnz;++i){
                         printf(" i = %d, row = %d, col = %d\n", i,outBuffer->rowIdxs[i],outBuffer->colIdxs[i]);
