@@ -56,7 +56,7 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias) 
                                                 unsigned int nnzIndxTemp = atomicAdd(&(result->nnz),1); //counts how many non zero elements I have
                                                 result->rowIdxs[nnzIndxTemp] = r;
                                                 result->colIdxs[nnzIndxTemp] = c;
-                                                result->values[nnzIndxTemp] = sum;
+                                                result->values[nnzIndxTemp] = 5;
                                         }
                                 }
                         }
