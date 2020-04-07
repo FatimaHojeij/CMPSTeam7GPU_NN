@@ -12,6 +12,7 @@ __global__ void spmspm(COOMatrix *result){
 	result->rowIdxs[0] = 1;
 	result->colIdxs[0] = 1;
 	result->values[0] = 5;
+	result->nnz = 10;
 }
 
 void sparseNN(Vector* result, COOMatrix* outBuffer, COOMatrix** layerWeights, float bias, unsigned int numLayers) {
@@ -37,7 +38,7 @@ void sparseNN(Vector* result, COOMatrix* outBuffer, COOMatrix** layerWeights, fl
 	cudaMemcpy(&(outBuffer_d->colIdxs), &out_colIdxs_d, sizeof(unsigned int*), cudaMemcpyHostToDevice);
 	cudaMemcpy(&(outBuffer_d->values), &out_values_d, sizeof(float*), cudaMemcpyHostToDevice);
 	cudaDeviceSynchronize();
-
+	printf("nnz before kernel call %d \n", outBuffer->nnz);
 
 	spmspm <<<1, 1>>> (outBuffer_d);
 
@@ -48,6 +49,7 @@ void sparseNN(Vector* result, COOMatrix* outBuffer, COOMatrix** layerWeights, fl
 	cudaMemcpy(outBuffer->values, out_values_d, outBuffer->capacity * sizeof(float), cudaMemcpyDeviceToHost);
 
 	printf("%f \n", outBuffer->values[0]);
+	printf("nnz after kernel call %d \n", outBuffer->nnz);
 
 
 
