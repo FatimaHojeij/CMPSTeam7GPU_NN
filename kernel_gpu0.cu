@@ -45,14 +45,14 @@ void sparseNN(Vector* result, COOMatrix* outBuffer, COOMatrix** layerWeights, fl
 	printf("nnz before kernel call %d \n", outBuffer->nnz);
 
 	spmspm <<<1, 1>>> (outBuffer_d);
-
+	cudaDeviceSynchronize();
 
 	//copy back       
 	cudaMemcpy(outBuffer->rowIdxs, out_rowIdxs_d, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
 	cudaMemcpy(outBuffer->colIdxs, out_colIdxs_d, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
 	cudaMemcpy(outBuffer->values, out_values_d, outBuffer->capacity * sizeof(float), cudaMemcpyDeviceToHost);
 	cudaMemcpy(&(outBuffer->nnz), out_nnz_d, sizeof(unsigned int), cudaMemcpyDeviceToHost);
-
+	cudaDeviceSynchronize();
 	printf("%f \n", outBuffer->values[0]);
 	printf("nnz after kernel call %d \n", outBuffer->nnz);
 
