@@ -208,7 +208,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
         
        //copying inbuffer
-	cudaMemcpy(inBuffer_d, inBuffer, sizeof(CSRMatrix), cudaMemcpyHostToDevice);
+	cudaMemcpy(&inBuffer_d, inBuffer, sizeof(CSRMatrix), cudaMemcpyHostToDevice);
 	cudaMemcpy(in_rowPtrs_d, inBuffer->rowPtrs, (inBuffer->numRows + 1) * sizeof(unsigned int), cudaMemcpyHostToDevice);
 	cudaMemcpy(in_colIdxs_d, inBuffer->colIdxs, inBuffer->numCols * sizeof(unsigned int), cudaMemcpyHostToDevice);
 	cudaMemcpy(in_values_d, inBuffer->values, inBuffer->numCols * sizeof(float), cudaMemcpyHostToDevice);
@@ -245,7 +245,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
         cudaMalloc((void**)&w_rowIdxs_d, W[layer]->numRows * sizeof(unsigned int));
         cudaMalloc((void**)&w_values_d, W[layer]->numRows * sizeof(float));
 		//copying W_d[layer]
-		cudaMemcpy(W_d, W[layer], sizeof(CSCMatrix), cudaMemcpyHostToDevice);
+		cudaMemcpy(&W_d, W[layer], sizeof(CSCMatrix), cudaMemcpyHostToDevice);
 		cudaMemcpy(w_colPtrs_d, W[layer]->colPtrs, W[layer]->numCols * sizeof(unsigned int), cudaMemcpyHostToDevice);
         cudaMemcpy(w_rowIdxs_d, W[layer]->rowIdxs, W[layer]->numRows * sizeof(unsigned int), cudaMemcpyHostToDevice);
         cudaMemcpy(w_values_d, W[layer]->values, W[layer]->numRows * sizeof(float), cudaMemcpyHostToDevice);
@@ -263,7 +263,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
                 dim3 numThreadsPerBlock(threads, threads);
                 dim3 numBlocks((W_d.numCols + numThreadsPerBlock.x - 1)/numThreadsPerBlock.x,(inBuffer_d.numRows + numThreadsPerBlock.y - 1)/numThreadsPerBlock.y);
                 //int numBlocks = (outputSize + numThreadsPerBlock - 1)/numThreadsPerBlock ;
-                spmspm <<<numBlocks, numThreadsPerBlock>>> (outBuffer_d, inBuffer_d, W_d[layer], bias);
+                spmspm <<<numBlocks, numThreadsPerBlock>>> (outBuffer_d, inBuffer_d, W_d, bias);
                 printf("iiiiiii");
                 //printf("size of outbuffer %d", outBuffer_d->nnz);
                 cudaDeviceSynchronize();
