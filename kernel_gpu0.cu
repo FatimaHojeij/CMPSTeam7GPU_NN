@@ -185,7 +185,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
         unsigned int* in_rowPtrs_d;
     unsigned int* in_colIdxs_d;
     float* in_values_d;
-	cudaMalloc((void**) inBuffer_d, sizeof(CSRMatrix));
+	cudaMalloc((void**) &inBuffer_d, sizeof(CSRMatrix));
     cudaMalloc((void**) &in_rowPtrs_d, (inBuffer->numRows + 1) * sizeof(unsigned int));
     cudaMalloc((void**) &in_colIdxs_d, inBuffer->numCols * sizeof(unsigned int));
     cudaMalloc((void**) &in_values_d, inBuffer->numCols * sizeof(float));
@@ -240,7 +240,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		unsigned int* w_colPtrs_d;
 		unsigned int* w_rowIdxs_d;
 		float* w_values_d;
-		cudaMalloc((void**)W_d, sizeof(CSCMatrix));
+		cudaMalloc((void**)&W_d, sizeof(CSCMatrix));
         cudaMalloc((void**)&w_colPtrs_d, (W[layer]->numCols + 1)* sizeof(unsigned int));
         cudaMalloc((void**)&w_rowIdxs_d, W[layer]->numRows * sizeof(unsigned int));
         cudaMalloc((void**)&w_values_d, W[layer]->numRows * sizeof(float));
@@ -261,7 +261,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
                 //int outputSize = inBuffer_d->numRows * W_d[layer]->numCols;
 
                 dim3 numThreadsPerBlock(threads, threads);
-                dim3 numBlocks((W_d[layer].numCols + numThreadsPerBlock.x - 1)/numThreadsPerBlock.x,(inBuffer_d.numRows + numThreadsPerBlock.y - 1)/numThreadsPerBlock.y);
+                dim3 numBlocks((W_d.numCols + numThreadsPerBlock.x - 1)/numThreadsPerBlock.x,(inBuffer_d.numRows + numThreadsPerBlock.y - 1)/numThreadsPerBlock.y);
                 //int numBlocks = (outputSize + numThreadsPerBlock - 1)/numThreadsPerBlock ;
                 spmspm <<<numBlocks, numThreadsPerBlock>>> (outBuffer_d, inBuffer_d, W_d[layer], bias);
                 printf("iiiiiii");
@@ -331,36 +331,8 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
       stopTimeAndPrint(&timer, "Find nonzero rows");
 
         // Free GPU memory
-        startTime(&timer);
-
-        cudaFree(inBuffer_d.rowPtrs);
-        cudaFree(inBuffer_d.colIdxs);
-        cudaFree(inBuffer_d.values);
-        // cudaFree(outBuffer_d->rowIdxs);
-        // cudaFree(outBuffer_d->colIdxs);
-        // cudaFree(outBuffer_d->values);
-        cudaFree(outBuffer_d);
-        for (unsigned int layer = 0; layer < numLayers; ++layer) {
-                cudaFree(W_d[layer].colPtrs);
-                cudaFree(W_d[layer].rowIdxs);
-                cudaFree(W_d[layer].values);
-
-        }
-
-
-        cudaDeviceSynchronize();
-        stopTime(&timer);
-
-        printElapsedTime(timer, "Deallocation time");
-
-        // Free buffers
-        startTime(&timer);
-        freeCSR(Y0);
-        for (unsigned int layer = 0; layer < numLayers; ++layer) {
-                freeCSC(W[layer]);
-        }
-
-        stopTimeAndPrint(&timer, "Deallocate memory");
+ 
+      
 
 
 }
