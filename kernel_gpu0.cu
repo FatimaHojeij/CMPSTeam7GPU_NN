@@ -11,7 +11,7 @@
 #define threads 512
 
 
-__global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, int* nnzIdx) {
+__global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias) {
     unsigned int r= blockIdx.y*blockDim.y +threadIdx.y;
     unsigned int c= blockIdx.x*blockDim.x + threadIdx.x;
     unsigned int rowPtrA;
@@ -53,7 +53,6 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
                                                         sum = YMAX;
                                                 }
                                                 unsigned int nnzIndxTemp = atomicAdd(&(result->nnz),1); //counts how many non zero elements I have
-                                                
                                                 result->rowIdxs[nnzIndxTemp] = r;
                                                 result->colIdxs[nnzIndxTemp] = c;
                                                 result->values[nnzIndxTemp] = sum;
@@ -63,7 +62,6 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
 
                 }
         }
-        atomicAdd(nnzIdx,1);
 }
 
 // COOMatrix* sortCOO(COOMatrix *A){
@@ -202,11 +200,6 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
         printf("inbuffer allocated\n");
 
-        int * nnzIdx_d, *nnzIdx;
-        nnzIdx=(int*)malloc(sizeof(int));
-        *nnzIdx=0;
-        cudaMalloc((void**)&nnzIdx_d,  sizeof(int));
-        cudaMemcpy(nnzIdx_d,nnzIdx,sizeof(int),cudaMemcpyHostToDevice);
         //outBuffer_d allocation
         // COOMatrix* outBuffer_d;
         // COOMatrix tmpOutBuffer;
@@ -235,7 +228,6 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 	cudaMalloc((void**)&out_rowIdxs_d, outBuffer->capacity * sizeof(unsigned int));
 	cudaMalloc((void**)&out_colIdxs_d, outBuffer->capacity * sizeof(unsigned int));
 	cudaMalloc((void**)&out_values_d, outBuffer->capacity * sizeof(float));
-
 
 	//copying outbuffer
 	cudaMemcpy(outBuffer_d, outBuffer, sizeof(COOMatrix), cudaMemcpyHostToDevice);
@@ -285,8 +277,8 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
                 dim3 numThreadsPerBlock(threads, threads);
                 dim3 numBlocks((W_d[layer].numCols + numThreadsPerBlock.x - 1)/numThreadsPerBlock.x,(inBuffer->numRows + numThreadsPerBlock.y - 1)/numThreadsPerBlock.y);
 
-                spmspm <<<numBlocks, numThreadsPerBlock>>> (outBuffer_d, tmpInBuffer, W_d[layer], bias,nnzIdx_d);
-                cudaMemcpy(nnzIdx,nnzIdx_d,sizeof(int),cudaMemcpyDeviceToHost);
+                spmspm <<<numBlocks, numThreadsPerBlock>>> (outBuffer_d, tmpInBuffer, W_d[layer], bias);
+
                 // outBuffer->numRows =tmpOutBuffer.numRows;
                 // outBuffer->numCols = tmpOutBuffer.numCols ;
                 // outBuffer->nnz = tmpOutBuffer.nnz ;
@@ -298,8 +290,8 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
                 cudaMemcpy(outBuffer->colIdxs, out_colIdxs_d, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
                 cudaMemcpy(outBuffer->values, out_values_d, outBuffer->capacity * sizeof(float), cudaMemcpyDeviceToHost);
 
-                printf("nnz %d\n",*nnzIdx);
-                for(int i =0; i<*nnzIdx;++i){
+                printf("nnz %d\n", outBuffer_d->nnz);
+                for(int i =0; i<outBuffer->nnz;++i){
                         printf(" i = %d, row = %d, col = %d\n", i,outBuffer->rowIdxs[i],outBuffer->colIdxs[i]);
                 }
 
