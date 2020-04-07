@@ -221,6 +221,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 	
 	
 	for (unsigned int layer = 0; layer < numLayers; ++layer) {
+		printf("Loop %u ", layer);
 		CSCMatrix* W_d;
 		unsigned int* w_colPtrs_d;
 		unsigned int* w_rowIdxs_d;
