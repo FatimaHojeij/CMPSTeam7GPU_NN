@@ -10,24 +10,24 @@
 #define threads 512
 
 
-__global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias) {
+__global__ void spmspm(COOMatrix *result, CSRMatrix *A, CSCMatrix *B, float bias) {
     unsigned int r= blockIdx.y*blockDim.y +threadIdx.y;
     unsigned int c= blockIdx.x*blockDim.x + threadIdx.x;
     unsigned int rowPtrA;
     unsigned int nnzA;
-        if(r < A.numRows && c < B.numCols){
-                rowPtrA = A.rowPtrs[r];
-                nnzA = A.rowPtrs[r + 1] - rowPtrA;
+        if(r < A->numRows && c < B->numCols){
+                rowPtrA = A->rowPtrs[r];
+                nnzA = A->rowPtrs[r + 1] - rowPtrA;
                 if(nnzA>0) { // if a row is not all zeros , we do computation otherwise we skip row
                         //ptrs to cols and vals of A[r]
-                        unsigned int* colIdxsA = A.colIdxs + rowPtrA;
-                        float* valueA = A.values + rowPtrA;
+                        unsigned int* colIdxsA = A->colIdxs + rowPtrA;
+                        float* valueA = A->values + rowPtrA;
                         //we will take one column of B
-                        unsigned int colPtrB = B.colPtrs[c];
-                        unsigned int nnzB = B.colPtrs[c + 1] - colPtrB;
+                        unsigned int colPtrB = B->colPtrs[c];
+                        unsigned int nnzB = B->colPtrs[c + 1] - colPtrB;
                         if(nnzB>0) { // if a col in B is not all zeros, we do computation otherwise skip//ptrs to rows and vals of B[c]
-                                unsigned int* rowIdxsB = B.rowIdxs + colPtrB;
-                                float* valueB = B.values + colPtrB;
+                                unsigned int* rowIdxsB = B->rowIdxs + colPtrB;
+                                float* valueB = B->values + colPtrB;
                                 // Loop and find intersection
                                 float sum = 0.0f;
                                 unsigned int ia = 0, ib = 0;
@@ -238,10 +238,11 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		cudaMemcpy(&(W_d->rowIdxs), &w_rowIdxs_d, sizeof(unsigned int*), cudaMemcpyHostToDevice);
 		cudaMemcpy(&(W_d->values), &w_values_d, sizeof(float*), cudaMemcpyHostToDevice);
 		
-		
+		printf("Computing layer %u (SpMSpM)", layer);
+        startTime(&timer);
 		dim3 numThreadsPerBlock(threads, threads);
-        dim3 numBlocks((W[layer]->numCols + numThreadsPerBlock.x - 1)/numThreadsPerBlock.x,(inBuffer_d.numRows + numThreadsPerBlock.y - 1)/numThreadsPerBlock.y);
-        spmspm <<<numBlocks, numThreadsPerBlock>>> (outBuffer_d, *inBuffer_d, *W_d, bias);
+        dim3 numBlocks((W[layer]->numCols + numThreadsPerBlock.x - 1)/numThreadsPerBlock.x,(inBuffer_d->numRows + numThreadsPerBlock.y - 1)/numThreadsPerBlock.y);
+        spmspm <<<numBlocks, numThreadsPerBlock>>> (outBuffer_d, inBuffer_d, W_d, bias);
         cudaDeviceSynchronize();
         stopTimeAndPrint(&timer, "");
 		
@@ -258,8 +259,8 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		
 		
 		stopTimeAndPrint(&timer, "For Sort");
-       		inBuffer = createCSRfromCOO(sortCOO(outBuffer));
-       		stopTimeAndPrint(&timer, "Out of sort");
+        inBuffer = createCSRfromCOO(sortCOO(outBuffer));
+        stopTimeAndPrint(&timer, "Out of sort");
 		
 		//do we need to malloc again (?)
 		cudaMemcpy(inBuffer_d, inBuffer, sizeof(CSRMatrix), cudaMemcpyHostToDevice);
