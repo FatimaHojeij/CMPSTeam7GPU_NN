@@ -266,13 +266,13 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
                 outBuffer->numCols = tmpOutBuffer.numCols ;
                 outBuffer->nnz = tmpOutBuffer.nnz ;
                 outBuffer->capacity = tmpOutBuffer.capacity ;
-                cudaMemcpy(outBuffer->rowIdx, tmpOutBuffer.rowIdxs,outBuffer->capacity * sizeof(unsigned int),cudaMemcpyDeviceToHost);
-                cudaMemcpy(outBuffer->colIdx, tmpOutBuffer.colIdx,outBuffer->capacity * sizeof(unsigned int),cudaMemcpyDeviceToHost);
+                cudaMemcpy(outBuffer->rowIdxs, tmpOutBuffer.rowIdxs,outBuffer->capacity * sizeof(unsigned int),cudaMemcpyDeviceToHost);
+                cudaMemcpy(outBuffer->colIdxs, tmpOutBuffer.colIdxs,outBuffer->capacity * sizeof(unsigned int),cudaMemcpyDeviceToHost);
                 cudaMemcpy(outBuffer->values, tmpOutBuffer.values,outBuffer->capacity * sizeof(unsigned int),cudaMemcpyDeviceToHost);
                 
                 printf("nnz %d\n", outBuffer->nnz);
                 for(int i =0; i<outBuffer->nnz;++i){
-                        printf(" i = %d, row = %d, col = %d\n", i,outBuffer->rowIdx[i],outBuffer->colIdx[i]);
+                        printf(" i = %d, row = %d, col = %d\n", i,outBuffer->rowIdxs[i],outBuffer->colIdx[i]);
                 }
 
                 cudaDeviceSynchronize();
@@ -308,7 +308,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
         //CPU
         // Find 
-        nonzero rows
+        //nonzero rows
         startTime(&timer);
         findNonzeroRows(result, inBuffer);
         stopTimeAndPrint(&timer, "Find nonzero rows");
