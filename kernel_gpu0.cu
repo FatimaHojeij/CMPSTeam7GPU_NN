@@ -276,7 +276,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 				
 				unsigned int* out_rowIdxs_h = (unsigned int*) malloc (outBuffer->capacity * sizeof(unsigned int));
 				unsigned int* out_colIdxs_h = (unsigned int*) malloc (outBuffer->capacity * sizeof(unsigned int));;
-				float* out_values_h = = (float*) malloc (outBuffer->capacity * sizeof(unsigned int));;
+				float* out_values_h = (float*) malloc (outBuffer->capacity * sizeof(unsigned int));;
 				
                 cudaMemcpy(outBuffer, &outBuffer_d, sizeof(COOMatrix), cudaMemcpyDeviceToHost);
 		//struct fields as variables(?)
