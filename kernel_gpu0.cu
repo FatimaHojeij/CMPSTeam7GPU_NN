@@ -34,23 +34,28 @@ void sparseNN(Vector* result, COOMatrix* outBuffer, COOMatrix** layerWeights, fl
         
  
 	//copying outbuffer
-	cudaMemcpy(outBuffer_d, outBuffer, sizeof(COOMatrix), cudaMemcpyHostToDevice);
+	//cudaMemcpy(outBuffer_d, outBuffer, sizeof(COOMatrix), cudaMemcpyHostToDevice);
 	cudaMemcpy(out_rowIdxs_d, outBuffer->rowIdxs, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyHostToDevice);
 	cudaMemcpy(out_colIdxs_d, outBuffer->colIdxs, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyHostToDevice);
 	cudaMemcpy(out_values_d, outBuffer->values, outBuffer->capacity * sizeof(float), cudaMemcpyHostToDevice);
-	cudaMemcpy(&(outBuffer_d->rowIdxs), &out_rowIdxs_d, sizeof(unsigned int*), cudaMemcpyHostToDevice);
-	cudaMemcpy(&(outBuffer_d->colIdxs), &out_colIdxs_d, sizeof(unsigned int*), cudaMemcpyHostToDevice);
-	cudaMemcpy(&(outBuffer_d->values), &out_values_d, sizeof(float*), cudaMemcpyHostToDevice);
+	outBuffer->rowIdxs = out_rowIdxs_d;
+	outBuffer->colIdxs = out_colIdxs_d;
+	outBuffer->values = out_values_d;
+	cudaMemcpy(outBuffer_d, outBuffer, sizeof(COOMatrix), cudaMemcpyHostToDevice);
+	
     cudaDeviceSynchronize();
 
-	
 	spmspm <<<1, 1>>> (outBuffer_d);
 		
-				
-                
-	cudaMemcpy(outBuffer->rowIdxs, outBuffer_d->rowIdxs, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
-	cudaMemcpy(outBuffer->colIdxs, outBuffer_d->colIdxs, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
-	cudaMemcpy(outBuffer->values, outBuffer_d->values, outBuffer->capacity * sizeof(float), cudaMemcpyDeviceToHost);
+	cudaDeviceSynchronize();			
+           
+	cudaMemcpy(outBuffer, outBuffer_d, sizeof(COOMatrix), cudaMemcpyDeviceToHost);
+	cudaMemcpy(outBuffer->rowIdxs, out_rowIdxs_d, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+	cudaMemcpy(outBuffer->colIdxs, out_colIdxs_d, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+	cudaMemcpy(outBuffer->values, out_values_d, outBuffer->capacity * sizeof(float), cudaMemcpyDeviceToHost);
+	
+	// 9. Point to host pointer in host struct.
+    //h_a->arr = h_arr;
 		
 	printf("%f \n", outBuffer->values[0]);
 
