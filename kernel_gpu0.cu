@@ -202,6 +202,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
         printf("inbuffer allocated\n");
 
         int * nnzIdx_d, *nnzIdx;
+        nnzIdx=(int*)malloc(sizeof(int));
         *nnzIdx=0;
         cudaMalloc((void**)&nnzIdx_d,  sizeof(int));
         cudaMemcpy(nnzIdx_d,nnzIdx,sizeof(int),cudaMemcpyHostToDevice);
