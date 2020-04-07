@@ -56,15 +56,12 @@ void sparseNN(Vector* result, COOMatrix* outBuffer, COOMatrix** layerWeights, fl
         printElapsedTime(timer, "Allocation time on GPU Memory");
 
 		spmspm <<<1, 1>>> (outBuffer_d);
-		unsigned int* out_rowIdxs_h = (unsigned int*) malloc (outBuffer->capacity * sizeof(unsigned int));
-				unsigned int* out_colIdxs_h = (unsigned int*) malloc (outBuffer->capacity * sizeof(unsigned int));;
-				float* out_values_h = (float*) malloc (outBuffer->capacity * sizeof(unsigned int));;
+		
 				
-                cudaMemcpy(outBuffer, &outBuffer_d, sizeof(COOMatrix), cudaMemcpyDeviceToHost);
-		//struct fields as variables(?)
-				cudaMemcpy(outBuffer->rowIdxs, outBuffer_d->rowIdxs, outBuffer_d->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
-				cudaMemcpy(outBuffer->colIdxs, outBuffer_d->colIdxs, outBuffer_d->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
-				cudaMemcpy(outBuffer->values, outBuffer_d->values, outBuffer_d->capacity * sizeof(float), cudaMemcpyDeviceToHost);
+                
+				cudaMemcpy(outBuffer->rowIdxs, outBuffer_d->rowIdxs, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+				cudaMemcpy(outBuffer->colIdxs, outBuffer_d->colIdxs, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+				cudaMemcpy(outBuffer->values, outBuffer_d->values, outBuffer->capacity * sizeof(float), cudaMemcpyDeviceToHost);
 		
 				printf("%f \n", outBuffer->values[0]);
 
