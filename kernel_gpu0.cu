@@ -241,7 +241,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		
 		dim3 numThreadsPerBlock(threads, threads);
         dim3 numBlocks((W[layer]->numCols + numThreadsPerBlock.x - 1)/numThreadsPerBlock.x,(inBuffer_d.numRows + numThreadsPerBlock.y - 1)/numThreadsPerBlock.y);
-        spmspm <<<numBlocks, numThreadsPerBlock>>> (outBuffer_d, &inBuffer_d, &W_d, bias);
+        spmspm <<<numBlocks, numThreadsPerBlock>>> (outBuffer_d, *inBuffer_d, *W_d, bias);
         cudaDeviceSynchronize();
         stopTimeAndPrint(&timer, "");
 		
@@ -258,11 +258,8 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		
 		
 		stopTimeAndPrint(&timer, "For Sort");
-		for(int i =0; i<outBuffer->nnz; i++){
-			stopTimeAndPrint(&timer, outBuffer_d->values[i]);
-		}
-        inBuffer = createCSRfromCOO(sortCOO(outBuffer));
-        stopTimeAndPrint(&timer, "Out of sort");
+       		inBuffer = createCSRfromCOO(sortCOO(outBuffer));
+       		stopTimeAndPrint(&timer, "Out of sort");
 		
 		//do we need to malloc again (?)
 		cudaMemcpy(inBuffer_d, inBuffer, sizeof(CSRMatrix), cudaMemcpyHostToDevice);
