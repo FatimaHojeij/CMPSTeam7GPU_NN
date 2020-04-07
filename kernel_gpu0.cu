@@ -16,6 +16,8 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias) 
     unsigned int c= blockIdx.x*blockDim.x + threadIdx.x;
     unsigned int rowPtrA;
     unsigned int nnzA;
+
+    result->nnz=5;
         if(r < A.numRows && c < B.numCols){
                 rowPtrA = A.rowPtrs[r];
                 nnzA = A.rowPtrs[r + 1] - rowPtrA;
