@@ -62,13 +62,10 @@ void sparseNN(Vector* result, COOMatrix* outBuffer, COOMatrix** layerWeights, fl
 				
                 cudaMemcpy(outBuffer, &outBuffer_d, sizeof(COOMatrix), cudaMemcpyDeviceToHost);
 		//struct fields as variables(?)
-				cudaMemcpy(out_rowIdxs_h, outBuffer_d->rowIdxs, outBuffer_d->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
-				cudaMemcpy(out_colIdxs_h, outBuffer_d->colIdxs, outBuffer_d->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
-				cudaMemcpy(out_values_h, outBuffer_d->values, outBuffer_d->capacity * sizeof(float), cudaMemcpyDeviceToHost);
-		//copy pointers back (??)
-				cudaMemcpy(&(outBuffer->rowIdxs), &out_rowIdxs_h, sizeof(unsigned int*), cudaMemcpyDeviceToHost);
-				cudaMemcpy(&(outBuffer->colIdxs), &out_colIdxs_h, sizeof(unsigned int*), cudaMemcpyDeviceToHost);
-				cudaMemcpy(&(outBuffer->values), &out_values_h, sizeof(float*), cudaMemcpyDeviceToHost);
+				cudaMemcpy(outBuffer->rowIdxs, outBuffer_d->rowIdxs, outBuffer_d->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+				cudaMemcpy(outBuffer_>colIdxs, outBuffer_d->colIdxs, outBuffer_d->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+				cudaMemcpy(outBuffer->values, outBuffer_d->values, outBuffer_d->capacity * sizeof(float), cudaMemcpyDeviceToHost);
+		
 				printf("%f \n", outBuffer->values[0]);
 
 
