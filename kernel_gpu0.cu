@@ -53,7 +53,7 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
                                                         sum = YMAX;
                                                 }
                                                 unsigned int nnzIndxTemp = atomicAdd(&(result->nnz),1); //counts how many non zero elements I have
-                                                atomicAdd(nnzIdx,1);
+                                                
                                                 result->rowIdxs[nnzIndxTemp] = r;
                                                 result->colIdxs[nnzIndxTemp] = c;
                                                 result->values[nnzIndxTemp] = sum;
@@ -63,6 +63,7 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
 
                 }
         }
+        atomicAdd(nnzIdx,1);
 }
 
 // COOMatrix* sortCOO(COOMatrix *A){
