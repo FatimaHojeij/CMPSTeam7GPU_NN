@@ -5,7 +5,7 @@
 #include "timer.h"
 
 
-__global__ void spmspm(COOMatrix *result, unsigned int* nnz_out, CSRMatrix A){ 
+__global__ void spmspm(COOMatrix *result, unsigned int* nnz_out, CSCMatrix A){ 
 	
 	result->rowIdxs[0] = 1;
 	result->colIdxs[0] = 1;
@@ -19,7 +19,6 @@ void sparseNN(Vector* result, COOMatrix* outBuffer, COOMatrix** layerWeights, fl
 	for (unsigned int layer = 0; layer < numLayers; ++layer) {
 			W[layer] = createCSCfromCOO(layerWeights[layer]);
 	}
-	stopTimeAndPrint(&timer, "Convert weights to CSC");
     //outBuffer_d allocation
 	COOMatrix *outBuffer_d; 
 	unsigned int* out_rowIdxs_d;
