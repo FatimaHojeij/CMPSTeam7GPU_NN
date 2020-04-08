@@ -62,8 +62,8 @@ void sparseNN(Vector* result, COOMatrix* outBuffer, COOMatrix** layerWeights, fl
         for (unsigned int layer = 0; layer < numLayers; ++layer) {
                 cudaMemcpy(W_d[layer].colPtrs, W[layer]->colPtrs, W[layer]->numCols * sizeof(unsigned int), cudaMemcpyHostToDevice);
                 cudaMemcpy(W_d[layer].rowIdxs, W[layer]->rowIdxs, W[layer]->numRows * sizeof(unsigned int), cudaMemcpyHostToDevice);
-                cudaMemcpy(W_d[layer].values, W[layer]->values, W[layer]
-
+                cudaMemcpy(W_d[layer].values, W[layer]->values, W[layer]);
+		}
 		cudaDeviceSynchronize();
 	spmspm <<<1, 1>>> (outBuffer_d, out_nnz_d, W_d[0]);
 	cudaDeviceSynchronize();
