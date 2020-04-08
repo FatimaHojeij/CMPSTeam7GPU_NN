@@ -295,7 +295,9 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
         CSCMatrix W_d[numLayers];
         for (unsigned int layer = 0; layer < numLayers; ++layer) {
                 W_d[layer].numRows = W[layer]->numRows;
+                unsigned int r = W_d[layer].numRows;
                 W_d[layer].numCols = W[layer]->numCols;
+                unsigned int c = W_d[layer].numCols;
                 W_d[layer].nnz = W[layer]->nnz;
                 W_d[layer].capacity = W[layer]->capacity;
                 cudaMalloc((void**)&W_d[layer].colPtrs, W[layer]->numCols * sizeof(unsigned int));
