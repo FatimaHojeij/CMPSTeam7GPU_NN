@@ -1,4 +1,3 @@
-// row+1; swapping; nnzidx; syncthreads
 #include <stdio.h>
 
 #include "kernel.h"
@@ -54,12 +53,11 @@ void sparseNN(Vector* result, COOMatrix* outBuffer, COOMatrix** layerWeights, fl
 	cudaMemcpy(outBuffer->rowIdxs, out_rowIdxs_d, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
 	cudaMemcpy(outBuffer->colIdxs, out_colIdxs_d, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
 	cudaMemcpy(outBuffer->values, out_values_d, outBuffer->capacity * sizeof(float), cudaMemcpyDeviceToHost);
-	//cudaMemcpy(&(outBuffer->nnz), out_nnz_d, sizeof(unsigned int), cudaMemcpyDeviceToHost);
 	cudaMemcpy(out_nnz_h, out_nnz_d, sizeof(unsigned int), cudaMemcpyDeviceToHost);
-	
+	outBuffer->nnz = *out_nnz_h;
 	cudaDeviceSynchronize();
 	printf("%f \n", outBuffer->values[0]);
-	printf("nnz after kernel call %d \n", out_nnz_h);
+	printf("nnz after kernel call %d \n", outBuffer->nnz);
 
 
 
