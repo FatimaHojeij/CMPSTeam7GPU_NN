@@ -201,7 +201,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
         printf("inbuffer allocated\n");
 
-        outBuffer_d allocation
+        //outBuffer_d allocation
         COOMatrix* outBuffer_d;
         COOMatrix tmpOutBuffer;
         //cudaMalloc((void**)&outBuffer_d,sizeof(COOMatrix));
@@ -283,7 +283,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
                 dim3 numBlocks((W_d[layer].numCols + numThreadsPerBlock.x - 1)/numThreadsPerBlock.x,(inBuffer->numRows + numThreadsPerBlock.y - 1)/numThreadsPerBlock.y);
 
                 spmspm <<<numBlocks, numThreadsPerBlock>>> (outBuffer_d, tmpInBuffer, W_d[layer], bias);
-                
+
                 cudaMemcpy(&tmpOutBuffer,outBuffer_d,sizeof(COOMatrix),cudaMemcpyDeviceToHost);
                 outBuffer->numRows =tmpOutBuffer.numRows;
                 outBuffer->numCols = tmpOutBuffer.numCols ;
