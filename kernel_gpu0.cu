@@ -10,7 +10,7 @@ __global__ void spmspm(COOMatrix *result, unsigned int* nnz_out, CSRMatrix A){
 	result->rowIdxs[0] = 1;
 	result->colIdxs[0] = 1;
 	result->values[0] = 5;
-	*nnz_out = A->values[1];
+	*nnz_out = A->numCols;
 }
 
 void sparseNN(Vector* result, COOMatrix* outBuffer, COOMatrix** layerWeights, float bias, unsigned int numLayers) {
