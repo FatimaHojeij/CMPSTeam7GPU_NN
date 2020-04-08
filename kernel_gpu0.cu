@@ -48,26 +48,24 @@ void sparseNN(Vector* result, COOMatrix* outBuffer, COOMatrix** layerWeights, fl
 	cudaMemcpy(&out_nnz_d, &out_nnz_h, sizeof(unsigned int*), cudaMemcpyHostToDevice);
 	cudaDeviceSynchronize();
 	printf("nnz before kernel call %d \n", outBuffer->nnz);
+	CSCMatrix W_d[numLayers];
+        for (unsigned int layer = 0; layer < numLayers; ++layer) {
+                W_d[layer].numRows = W[layer]->numRows;
+                W_d[layer].numCols = W[layer]->numCols;
+                W_d[layer].nnz = W[layer]->nnz;
+                W_d[layer].capacity = W[layer]->capacity;
+                cudaMalloc((void**)&W_d[layer].colPtrs, W[layer]->numCols * sizeof(unsigned int));
+                cudaMalloc((void**)&W_d[layer].rowIdxs, W[layer]->numRows * sizeof(unsigned int));
+                cudaMalloc((void**)&W_d[layer].values, W[layer]->numRows * sizeof(float));
+        }
 
-	unsigned int layer = 0;
-		CSCMatrix* W_d;
-		unsigned int* w_colPtrs_d;
-		unsigned int* w_rowIdxs_d;
-		float* w_values_d;
-		cudaMalloc((void**)&W_d, sizeof(CSCMatrix));
-        cudaMalloc((void**)&w_colPtrs_d, (W[layer]->numCols + 1)* sizeof(unsigned int));
-        cudaMalloc((void**)&w_rowIdxs_d, W[layer]->numRows * sizeof(unsigned int));
-        cudaMalloc((void**)&w_values_d, W[layer]->numRows * sizeof(float));
-		//copying W_d[layer]
-		cudaMemcpy(W_d, W[layer], sizeof(CSCMatrix), cudaMemcpyHostToDevice);
-		cudaMemcpy(w_colPtrs_d, W[layer]->colPtrs, W[layer]->numCols * sizeof(unsigned int), cudaMemcpyHostToDevice);
-        cudaMemcpy(w_rowIdxs_d, W[layer]->rowIdxs, W[layer]->numRows * sizeof(unsigned int), cudaMemcpyHostToDevice);
-        cudaMemcpy(w_values_d, W[layer]->values, W[layer]->numRows * sizeof(float), cudaMemcpyHostToDevice);
-		cudaMemcpy(&(W_d->colPtrs), &w_colPtrs_d, sizeof(unsigned int*), cudaMemcpyHostToDevice);
-		cudaMemcpy(&(W_d->rowIdxs), &w_rowIdxs_d, sizeof(unsigned int*), cudaMemcpyHostToDevice);
-		cudaMemcpy(&(W_d->values), &w_values_d, sizeof(float*), cudaMemcpyHostToDevice);
+        for (unsigned int layer = 0; layer < numLayers; ++layer) {
+                cudaMemcpy(W_d[layer].colPtrs, W[layer]->colPtrs, W[layer]->numCols * sizeof(unsigned int), cudaMemcpyHostToDevice);
+                cudaMemcpy(W_d[layer].rowIdxs, W[layer]->rowIdxs, W[layer]->numRows * sizeof(unsigned int), cudaMemcpyHostToDevice);
+                cudaMemcpy(W_d[layer].values, W[layer]->values, W[layer]
+
 		cudaDeviceSynchronize();
-	spmspm <<<1, 1>>> (outBuffer_d, out_nnz_d, *W_d);
+	spmspm <<<1, 1>>> (outBuffer_d, out_nnz_d, W_d[0]);
 	cudaDeviceSynchronize();
 
 	//copy back       
