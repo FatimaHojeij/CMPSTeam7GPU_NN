@@ -18,8 +18,13 @@ __global__ void spmspm(COOMatrix *result, unsigned int* nnz_out, CSRMatrix A, CS
 			unsigned int colPtrB = B.colPtrs[0];
 			unsigned int nnzB = B.colPtrs[c + 1] - colPtrB;
 			if(nnzB>0) {
+				unsigned int* rowIdxsB = B.rowIdxs + colPtrB;
+                                float* valueB = B.values + colPtrB;
+                                float sum = 0.0f;
+                                unsigned int ia = 0, ib = 0;
 				*nnz_out = r;
 				result->values[0] = c;
+				
 			}
 		}
 	}
