@@ -5,12 +5,11 @@
 #include "timer.h"
 
 
-__global__ void spmspm(COOMatrix *result, unsigned int* nnz_out, CSCMatrix B){ 
+__global__ void spmspm(COOMatrix *result, unsigned int* nnz_out, CSRMatrix A, CSCMatrix B, float bias){ 
 	
 	result->rowIdxs[0] = 1;
 	result->colIdxs[0] = 1;
 	result->values[0] = B.numCols;
-	result->nnz = 10;
 	*nnz_out = 42;
 }
 
@@ -96,19 +95,19 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 	cudaDeviceSynchronize();
 	printf("nnz before kernel call %d \n", outBuffer->nnz);
 
-	spmspm <<<1, 1>>> (outBuffer_d, out_nnz_d, W_d[0]);
+	spmspm <<<1, 1>>> (outBuffer_d, out_nnz_d, inBuffer_d, W_d[0], bias);
 	cudaDeviceSynchronize();
 
 	//copy back       
 	cudaMemcpy(outBuffer->rowIdxs, out_rowIdxs_d, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
 	cudaMemcpy(outBuffer->colIdxs, out_colIdxs_d, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
 	cudaMemcpy(outBuffer->values, out_values_d, outBuffer->capacity * sizeof(float), cudaMemcpyDeviceToHost);
-	//cudaMemcpy(&(outBuffer->nnz), out_nnz_d, sizeof(unsigned int), cudaMemcpyDeviceToHost);
 	cudaMemcpy(out_nnz_h, out_nnz_d, sizeof(unsigned int), cudaMemcpyDeviceToHost);
+	outBuffer->nnz = *out_nnz_h;
 	
 	cudaDeviceSynchronize();
 	printf("%f \n", outBuffer->values[0]);
-	printf("nnz after kernel call %d \n", *out_nnz_h);
+	printf("nnz after kernel call %d \n", outBuffer->nnz);
 
 
 
