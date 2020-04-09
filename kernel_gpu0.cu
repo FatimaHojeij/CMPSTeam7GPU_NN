@@ -27,6 +27,11 @@ __global__ void spmspm(COOMatrix *result, unsigned int* nnz_out, CSRMatrix A, CS
 				while(ia < nnzA && ib < nnzB) { 
 					unsigned int colIdx = colIdxsA[ia];
                                         unsigned int rowIdx = rowIdxsB[ib];
+					if(colIdx < rowIdx) {
+                                                ia++;
+                                        } else if(colIdx > rowIdx) {
+                                                ib++;
+                                        }
 					++ia;
 					++ib;
 				}
