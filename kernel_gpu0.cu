@@ -5,12 +5,14 @@
 #include "timer.h"
 
 
-__global__ void spmspm(COOMatrix *result, unsigned int* nnz_out, CSCMatrix A){ 
+__global__ void spmspm(COOMatrix *result, unsigned int* nnz_out, CSCMatrix B){ 
 	
 	result->rowIdxs[0] = 1;
 	result->colIdxs[0] = 1;
 	result->values[0] = 5;
-	*nnz_out = A.numCols;
+	unsigned int colPtrB = B.colPtrs[0];
+    unsigned int nnzB = B.colPtrs[0+ 1] - colPtrB;
+	*nnz_out = nnzB;
 }
 
 void sparseNN(Vector* result, COOMatrix* outBuffer, COOMatrix** layerWeights, float bias, unsigned int numLayers) {
