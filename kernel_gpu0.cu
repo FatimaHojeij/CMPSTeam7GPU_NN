@@ -11,7 +11,7 @@ __global__ void spmspm(COOMatrix *result, unsigned int* nnz_out, CSRMatrix A, CS
 	result->colIdxs[0] = 1;
 	unsigned int rowPtrA = A.rowPtrs[0];
         unsigned int nnzA = A.rowPtrs[0 + 1] - rowPtrA;
-	result->values[0] = B.values[0];
+	result->values[0] = nnzA;
 	*nnz_out = A.values[0];
 }
 
