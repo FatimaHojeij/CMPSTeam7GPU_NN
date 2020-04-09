@@ -106,7 +106,13 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 	startTime(&timer);
 	CSCMatrix* W[numLayers];
 	for (unsigned int layer = 0; layer < numLayers; ++layer) {
-			W[layer] = createCSCfromCOO(layerWeights[layer]);
+                W[layer] = createCSCfromCOO(layerWeights[layer]);
+                if(layer==1 || layer==0){     
+                        printf("layer %u\n",layer);   
+                        for(unsigned int j=0; j<W[layer].nnz; ++j){
+                                printf("values : %f\n",W[layer].values[j]);
+                        }
+                }
 	}
 	stopTimeAndPrint(&timer, "Convert weights to CSC");
 
@@ -129,7 +135,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
         //cudaMalloc((void**)&result_d->data, result->capacity * sizeof(unsigned int));
         //inBuffer_d allocation
         
-
+        
         //allocating inbuffer address and value
         CSRMatrix tmpInBuffer;
         CSRMatrix* inBuffer_d;
