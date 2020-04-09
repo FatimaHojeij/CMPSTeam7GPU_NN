@@ -153,7 +153,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 	
 	printf("print W \n");
 	for(int i=0; i<W[0]->numRows; i++){
-		printf("cpu value at %d %f \n", layer, W[0]->values[i]);
+		printf("cpu value at %d %f \n", i, W[0]->values[i]);
 	}
 
 
