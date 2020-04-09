@@ -9,6 +9,8 @@ __global__ void spmspm(COOMatrix *result, unsigned int* nnz_out, CSRMatrix A, CS
 	
 	result->rowIdxs[0] = 1;
 	result->colIdxs[0] = 1;
+	unsigned int rowPtrA = A.rowPtrs[0];
+        unsigned int nnzA = A.rowPtrs[0 + 1] - rowPtrA;
 	result->values[0] = B.values[0];
 	*nnz_out = A.values[0];
 }
@@ -146,8 +148,8 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		cudaDeviceSynchronize();
 		printf("gpu value at 0 %f \n", outBuffer->values[0]);
-		printf("cpu value at 0 %f \n", W[layer]->values[0]);
-		printf("nnz after kernel call %d \n", outBuffer->nnz);
+		//printf("cpu value at 0 %f \n", W[layer]->values[0]);
+		//printf("nnz after kernel call %d \n", outBuffer->nnz);
 	}
 
 
