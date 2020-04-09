@@ -58,7 +58,7 @@ void sparseNN(Vector* result, COOMatrix* outBuffer, COOMatrix** layerWeights, fl
 	
 	cudaDeviceSynchronize();
 	printf("%f \n", outBuffer->values[0]);
-	printf("nnz after kernel call %d \n", out_nnz_h);
+	printf("nnz after kernel call %d \n", *out_nnz_h);
 
 
 
