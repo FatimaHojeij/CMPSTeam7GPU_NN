@@ -11,14 +11,16 @@
 __global__ void spmspm(COOMatrix *result, unsigned int* nnz_out, CSRMatrix A, CSCMatrix B, float bias){ 
 	unsigned int r= blockIdx.y*blockDim.y +threadIdx.y;
     	unsigned int c= blockIdx.x*blockDim.x + threadIdx.x;
-	result->rowIdxs[0] = 1;
-	result->colIdxs[0] = 1;
-	unsigned int rowPtrA = A.rowPtrs[0];
-        unsigned int nnzA = A.rowPtrs[r + 1] - rowPtrA;
-	result->values[0] = r;
-	unsigned int colPtrB = B.colPtrs[0];
-        unsigned int nnzB = B.colPtrs[c + 1] - colPtrB;
-	*nnz_out = c;
+	if(r < A.numRows && c < B.numCols){
+		result->rowIdxs[0] = 1;
+		result->colIdxs[0] = 1;
+		unsigned int rowPtrA = A.rowPtrs[0];
+		unsigned int nnzA = A.rowPtrs[r + 1] - rowPtrA;
+		result->values[0] = c;
+		unsigned int colPtrB = B.colPtrs[0];
+		unsigned int nnzB = B.colPtrs[c + 1] - colPtrB;
+		*nnz_out = r;
+	}
 }
 
 COOMatrix* createEmptyCOO(unsigned int numRows, unsigned int numCols, unsigned int capacity) {
