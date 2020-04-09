@@ -14,11 +14,24 @@ __global__ void spmspm(COOMatrix *result, unsigned int* nnz_out, CSCMatrix B){
 	*nnz_out = 42;
 }
 
-void sparseNN(Vector* result, COOMatrix* outBuffer, COOMatrix** layerWeights, float bias, unsigned int numLayers) {
+COOMatrix* createEmptyCOO(unsigned int numRows, unsigned int numCols, unsigned int capacity) {
+        COOMatrix *coo = (COOMatrix *)malloc(sizeof(COOMatrix));
+        coo->rowIdxs= (unsigned int *)malloc(capacity * sizeof(unsigned int));
+        coo->colIdxs= (unsigned int *)malloc(capacity * sizeof(unsigned int));
+        coo->values= (float *)malloc( capacity * sizeof(float));
+        coo->numRows = numRows;
+        coo->numCols = numCols;
+        coo->nnz = 0;
+        coo->capacity = capacity;
+        return coo;
+}
+void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeights, float bias, unsigned int numLayers) {
+	CSRMatrix* Y0 = createCSRfromCOO(featureVectors);
 	CSCMatrix* W[numLayers];
 	for (unsigned int layer = 0; layer < numLayers; ++layer) {
 			W[layer] = createCSCfromCOO(layerWeights[layer]);
 	}
+	COOMatrix *outBuffer = createEmptyCOO(Y0->numRows, Y0->numCols, 5 * Y0->nnz);
     //outBuffer_d allocation
 	COOMatrix *outBuffer_d; 
 	unsigned int* out_rowIdxs_d;
