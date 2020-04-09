@@ -19,52 +19,6 @@ __global__ void spmspm(COOMatrix *result, unsigned int* nnz_out, CSRMatrix A, CS
 	unsigned int colPtrB = B.colPtrs[0];
         unsigned int nnzB = B.colPtrs[c + 1] - colPtrB;
 	*nnz_out = nnzB;
-	if(r < A.numRows && c < B.numCols){
-                unsigned int rowPtrA = A.rowPtrs[r];
-                unsigned int nnzA = A.rowPtrs[r + 1] - rowPtrA;
-                if(nnzA>0) { // if a row is not all zeros , we do computation otherwise we skip row
-                        //ptrs to cols and vals of A[r]
-                        unsigned int* colIdxsA = A.colIdxs + rowPtrA;
-                        float* valueA = A.values + rowPtrA;
-                        //we will take one column of B
-                        unsigned int colPtrB = B.colPtrs[c];
-                        unsigned int nnzB = B.colPtrs[c + 1] - colPtrB;
-                        if(nnzB>0) { // if a col in B is not all zeros, we do computation otherwise skip//ptrs to rows and vals of B[c]
-                                unsigned int* rowIdxsB = B.rowIdxs + colPtrB;
-                                float* valueB = B.values + colPtrB;
-                                // Loop and find intersection
-                                float sum = 0.0f;
-                                unsigned int ia = 0, ib = 0;
-                                while(ia < nnzA && ib < nnzB) { // loops over all non zeros from A and B and stop when there is no more non zero
-                                        unsigned int colIdx = colIdxsA[ia]; //single item col index from A
-                                        unsigned int rowIdx = rowIdxsB[ib]; //single item row index from B
-                                        if(colIdx < rowIdx) {
-                                                ++ia;
-                                        } else if(colIdx > rowIdx) {
-                                                ++ib;
-                                        } else {
-                                                sum += valueA[ia]*valueB[ib];// do the multiplication of the row that matches the column
-                                                ++ia;
-                                                ++ib;
-                                        }
-                                }
-                                if(sum > THRESHOLD || sum < -THRESHOLD) { //if not smaller than abs(threshold)
-                                        sum += bias; //add to it the bias
-                                        //Remove negative and zero values
-                                        if(sum > 0) {//if end result is positive otherwise I also do not want to add it to result
-                                                if(sum>YMAX) { //make sure it is on an upper limit
-                                                        sum = YMAX;
-                                                }
-                                                unsigned int nnzIndxTemp = atomicAdd(nnz_out,1); //counts how many non zero elements I have
-                                                result->rowIdxs[nnzIndxTemp] = r;
-                                                result->colIdxs[nnzIndxTemp] = c;
-                                                result->values[nnzIndxTemp] = sum;
-                                        }
-                                }
-                        }
-
-                }
-        }
 }
 
 COOMatrix* createEmptyCOO(unsigned int numRows, unsigned int numCols, unsigned int capacity) {
