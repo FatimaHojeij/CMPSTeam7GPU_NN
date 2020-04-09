@@ -109,7 +109,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
                 cudaMalloc((void**)&W_d[layer].values, W[layer]->numRows * sizeof(float));
         }
 
-        for (unsigned int layer = 0; layer < numLayers; ++layer) {
+        for (unsigned int layer = 0; layer < 1; ++layer) {
                 cudaMemcpy(W_d[layer].colPtrs, W[layer]->colPtrs, W[layer]->numCols * sizeof(unsigned int), cudaMemcpyHostToDevice);
                 cudaMemcpy(W_d[layer].rowIdxs, W[layer]->rowIdxs, W[layer]->numRows * sizeof(unsigned int), cudaMemcpyHostToDevice);
                 cudaMemcpy(W_d[layer].values, W[layer]->values, W[layer]->numRows * sizeof(float), cudaMemcpyHostToDevice);
@@ -152,6 +152,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		for(int i=0; i<W[layer]->numRows; i++){
 			printf("cpu value at %d %f \n", layer, W[layer]->values[layer]);
 		}
+		cudaDeviceSynchronize();
 	}
 
 
