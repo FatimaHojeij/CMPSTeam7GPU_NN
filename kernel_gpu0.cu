@@ -24,7 +24,44 @@ COOMatrix* createEmptyCOO(unsigned int numRows, unsigned int numCols, unsigned i
         coo->capacity = capacity;
         return coo;
 }
+
+COOMatrix* sortCOO(COOMatrix *A){
+         for (unsigned int i = 0; i < A->nnz; i++)
+                for (unsigned int j = 0; j < A->nnz-i-1; j++)
+                {    if (A->rowIdxs[j] > A->rowIdxs[j+1]){
+                                unsigned int r = A->rowIdxs[j];
+                                unsigned int c =  A->colIdxs[j];
+                                float v = A->values[j];
+                                A->rowIdxs[j] = A->rowIdxs[j+1];
+                                A->colIdxs[j] = A->colIdxs[j+1];
+                                A->values[j] = A->values[j+1];
+                                A->rowIdxs[j+1] = r;
+                                A->colIdxs[j+1] = c;
+                                A->values[j+1] = v;
+                        }
+                }
+         int begin = 0;
+         for(unsigned int i  = 0 ;  i < A->nnz -1 ; i++)
+         {
+                 if(A->rowIdxs[i] != A->rowIdxs[i+1])
+                 {
+                        for(int k = begin ;  k< i + begin; k++)
+                                for (int m = begin ; m < i + begin - k -1 ;m++)
+                                        if(A->colIdxs[m] > A->colIdxs[m+1]){
+                                                unsigned int c = A->colIdxs[m];
+                                                float v = A->values[m];
+                                                A->colIdxs[m] = A->colIdxs[m+1];
+                                                A->values[m] = A->values[m+1];
+                                                A->colIdxs[m+1] =c;
+                                                A->values[m+1] = v;
+                                        }
+                        begin= i+1;
+                }
+        }
+        return A;
+ }
 void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeights, float bias, unsigned int numLayers) {
+	Timer timer;
 	CSRMatrix* Y0 = createCSRfromCOO(featureVectors);
 	CSCMatrix* W[numLayers];
 	for (unsigned int layer = 0; layer < numLayers; ++layer) {
@@ -93,21 +130,24 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
         cudaMemcpy(inBuffer_d.values, inBuffer->values, inBuffer->numCols * sizeof(float), cudaMemcpyHostToDevice);
 	
 	cudaDeviceSynchronize();
-	printf("nnz before kernel call %d \n", outBuffer->nnz);
+	for (unsigned int layer = 0; layer < numLayers; ++layer) {
+		printf("nnz before kernel call %d \n", outBuffer->nnz);
+		printf("Computing layer %u (SpMSpM)", layer);
+                startTime(&timer);
+		spmspm <<<1, 1>>> (outBuffer_d, out_nnz_d, inBuffer_d, W_d[layer], bias);
+		cudaDeviceSynchronize();
+		stopTimeAndPrint(&timer, "");
+		//copy back       
+		cudaMemcpy(outBuffer->rowIdxs, out_rowIdxs_d, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+		cudaMemcpy(outBuffer->colIdxs, out_colIdxs_d, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+		cudaMemcpy(outBuffer->values, out_values_d, outBuffer->capacity * sizeof(float), cudaMemcpyDeviceToHost);
+		cudaMemcpy(out_nnz_h, out_nnz_d, sizeof(unsigned int), cudaMemcpyDeviceToHost);
+		outBuffer->nnz = *out_nnz_h;
 
-	spmspm <<<1, 1>>> (outBuffer_d, out_nnz_d, inBuffer_d, W_d[0], bias);
-	cudaDeviceSynchronize();
-
-	//copy back       
-	cudaMemcpy(outBuffer->rowIdxs, out_rowIdxs_d, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
-	cudaMemcpy(outBuffer->colIdxs, out_colIdxs_d, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
-	cudaMemcpy(outBuffer->values, out_values_d, outBuffer->capacity * sizeof(float), cudaMemcpyDeviceToHost);
-	cudaMemcpy(out_nnz_h, out_nnz_d, sizeof(unsigned int), cudaMemcpyDeviceToHost);
-	outBuffer->nnz = *out_nnz_h;
-	
-	cudaDeviceSynchronize();
-	printf("%f \n", outBuffer->values[0]);
-	printf("nnz after kernel call %d \n", outBuffer->nnz);
+		cudaDeviceSynchronize();
+		printf("value at 0 %f \n", outBuffer->values[0]);
+		printf("nnz after kernel call %d \n", outBuffer->nnz);
+	}
 
 
 
