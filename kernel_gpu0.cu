@@ -9,7 +9,7 @@ __global__ void spmspm(COOMatrix *result, unsigned int* nnz_out, CSRMatrix A, CS
 	
 	result->rowIdxs[0] = 1;
 	result->colIdxs[0] = 1;
-	result->values[0] = B.values[25];
+	result->values[0] = B.values[0];
 	*nnz_out = A.values[0];
 }
 
@@ -109,7 +109,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
                 cudaMalloc((void**)&W_d[layer].values, W[layer]->numRows * sizeof(float));
         }
 
-        for (unsigned int layer = 0; layer < 1; ++layer) {
+        for (unsigned int layer = 0; layer < numLayers; ++layer) {
                 cudaMemcpy(W_d[layer].colPtrs, W[layer]->colPtrs, W[layer]->numCols * sizeof(unsigned int), cudaMemcpyHostToDevice);
                 cudaMemcpy(W_d[layer].rowIdxs, W[layer]->rowIdxs, W[layer]->numRows * sizeof(unsigned int), cudaMemcpyHostToDevice);
                 cudaMemcpy(W_d[layer].values, W[layer]->values, W[layer]->numRows * sizeof(float), cudaMemcpyHostToDevice);
@@ -146,14 +146,8 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		cudaDeviceSynchronize();
 		printf("gpu value at 0 %f \n", outBuffer->values[0]);
-		printf("cpu value at 25 %f \n", W[layer]->values[25]);
+		printf("cpu value at 0 %f \n", W[layer]->values[0]);
 		printf("nnz after kernel call %d \n", outBuffer->nnz);
-		
-	}
-	
-	printf("print W \n");
-	for(int i=0; i<W[0]->numRows; i++){
-		printf("cpu value at %d %f \n", i, W[0]->values[i]);
 	}
 
 
