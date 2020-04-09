@@ -15,10 +15,10 @@ __global__ void spmspm(COOMatrix *result, unsigned int* nnz_out, CSRMatrix A, CS
 	result->colIdxs[0] = 1;
 	unsigned int rowPtrA = A.rowPtrs[0];
         unsigned int nnzA = A.rowPtrs[r + 1] - rowPtrA;
-	result->values[0] = nnzA;
+	result->values[0] = r;
 	unsigned int colPtrB = B.colPtrs[0];
         unsigned int nnzB = B.colPtrs[c + 1] - colPtrB;
-	*nnz_out = nnzB;
+	*nnz_out = c;
 }
 
 COOMatrix* createEmptyCOO(unsigned int numRows, unsigned int numCols, unsigned int capacity) {
