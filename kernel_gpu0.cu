@@ -12,110 +12,59 @@
 
 
 __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, unsigned int* nnz_out) {
-//     unsigned int r= blockIdx.y*blockDim.y +threadIdx.y;
-//     unsigned int c= blockIdx.x*blockDim.x + threadIdx.x;
-//     unsigned int rowPtrA;
-//     unsigned int nnzA;
+    unsigned int r= blockIdx.y*blockDim.y +threadIdx.y;
+    unsigned int c= blockIdx.x*blockDim.x + threadIdx.x;
+    
 
-//         if(r < A.numRows && c < B.numCols){
-//                 rowPtrA = A.rowPtrs[r];
-//                 nnzA = A.rowPtrs[r + 1] - rowPtrA;
-//                 if(nnzA>0) { // if a row is not all zeros , we do computation otherwise we skip row
-//                         //ptrs to cols and vals of A[r]
-//                         unsigned int* colIdxsA = A.colIdxs + rowPtrA;
-//                         float* valueA = A.values + rowPtrA;
-//                         //we will take one column of B
-//                         unsigned int colPtrB = B.colPtrs[c];
-//                         unsigned int nnzB = B.colPtrs[c + 1] - colPtrB;
-//                         if(nnzB>0) { // if a col in B is not all zeros, we do computation otherwise skip//ptrs to rows and vals of B[c]
-//                                 unsigned int* rowIdxsB = B.rowIdxs + colPtrB;
-//                                 float* valueB = B.values + colPtrB;
-//                                 // Loop and find intersection
-//                                 float sum = 0.0f;
-//                                 unsigned int ia = 0, ib = 0;
-//                                 while(ia < nnzA && ib < nnzB) { // loops over all non zeros from A and B and stop when there is no more non zero
-//                                         unsigned int colIdx = colIdxsA[ia]; //single item col index from A
-//                                         unsigned int rowIdx = rowIdxsB[ib]; //single item row index from B
-//                                         if(colIdx < rowIdx) {
-//                                                 ia++;
-//                                         } else if(colIdx > rowIdx) {
-//                                                 ib++;
-//                                         } else {
-//                                                 sum += valueA[ia]*valueB[ib];// do the multiplication of the row that matches the column
-//                                                 ia++;
-//                                                 ib++;
-//                                         }
-//                                 }
-//                                 if(sum > THRESHOLD || sum < -THRESHOLD) { //if not smaller than abs(threshold)
-//                                         sum += bias; //add to it the bias
-//                                         //Remove negative and zero values
-//                                         if(sum > 0) {//if end result is positive otherwise I also do not want to add it to result
-//                                                 if(sum>YMAX) { //make sure it is on an upper limit
-//                                                         sum = YMAX;
-//                                                 }
-//                                                 unsigned int nnzIndxTemp = atomicAdd(nnz_out,1); //counts how many non zero elements I have
-//                                                 result->rowIdxs[nnzIndxTemp] = r;
-//                                                 result->colIdxs[nnzIndxTemp] = c;
-//                                                 result->values[nnzIndxTemp] = sum;
-//                                         }
-//                                 }
-//                         }
+        if(r < A.numRows && c < B.numCols){
+                unsigned int rowPtrA = A.rowPtrs[r];
+                unsigned int nnzA = A.rowPtrs[r + 1] - rowPtrA;
+                if(nnzA>0) { // if a row is not all zeros , we do computation otherwise we skip row
+                        //ptrs to cols and vals of A[r]
+                        unsigned int* colIdxsA = A.colIdxs + rowPtrA;
+                        float* valueA = A.values + rowPtrA;
+                        //we will take one column of B
+                        unsigned int colPtrB = B.colPtrs[c];
+                        unsigned int nnzB = B.colPtrs[c + 1] - colPtrB;
+                        if(nnzB>0) { // if a col in B is not all zeros, we do computation otherwise skip//ptrs to rows and vals of B[c]
+                                unsigned int* rowIdxsB = B.rowIdxs + colPtrB;
+                                float* valueB = B.values + colPtrB;
+                                // Loop and find intersection
+                                float sum = 0.0f;
+                                unsigned int ia = 0, ib = 0;
+                                while(ia < nnzA && ib < nnzB) { // loops over all non zeros from A and B and stop when there is no more non zero
+                                        unsigned int colIdx = colIdxsA[ia]; //single item col index from A
+                                        unsigned int rowIdx = rowIdxsB[ib]; //single item row index from B
+                                        if(colIdx < rowIdx) {
+                                                ia++;
+                                        } else if(colIdx > rowIdx) {
+                                                ib++;
+                                        } else {
+                                                sum += valueA[ia]*valueB[ib];// do the multiplication of the row that matches the column
+                                                ia++;
+                                                ib++;
+                                        }
+                                }
+                                if(sum > THRESHOLD || sum < -THRESHOLD) { //if not smaller than abs(threshold)
+                                        sum += bias; //add to it the bias
+                                        //Remove negative and zero values
+                                        if(sum > 0) {//if end result is positive otherwise I also do not want to add it to result
+                                                if(sum>YMAX) { //make sure it is on an upper limit
+                                                        sum = YMAX;
+                                                }
+                                                unsigned int nnzIndxTemp = atomicAdd(nnz_out,1); //counts how many non zero elements I have
+                                                result->rowIdxs[nnzIndxTemp] = r;
+                                                result->colIdxs[nnzIndxTemp] = c;
+                                                result->values[nnzIndxTemp] = sum;
+                                        }
+                                }
+                        }
 
-//                 }
-//         }
-        atomicAdd(nnz_out,1);
+                }
+        }
+
 }
 
-// COOMatrix* sortCOO(COOMatrix *A){
-
-//         // sorting rows
-//          for (unsigned int i = 0; i < A->nnz; i++)
-//                 for (unsigned int j = 0; j < A->nnz-i-1; j++)
-//                 {    if (A->rowIdxs[j] > A->rowIdxs[j+1]){
-//                                 unsigned int r = A->rowIdxs[j];
-//                                 unsigned int c =  A->colIdxs[j];
-//                                 float v = A->values[j];
-//                                 A->rowIdxs[j] = A->rowIdxs[j+1];
-//                                 A->colIdxs[j] = A->colIdxs[j+1];
-//                                 A->values[j] = A->values[j+1];
-//                                 A->rowIdxs[j+1] = r;
-//                                 A->colIdxs[j+1] = c;
-//                                 A->values[j+1] = v;
-//                         }
-//                 }
-
-//          // sorting the col
-//         // int count = 0;
-//          int begin = 0;
-//          for(unsigned int i  = 0 ;  i < A->nnz -1 ; i++)
-//          {
-//                  //count++;
-//                  if(A->rowIdxs[i] != A->rowIdxs[i+1])
-//                  {
-//                          //sort the col
-//                         for(int k = begin ;  k< i + begin; k++)
-//                                 for (int m = begin ; m < i + begin - k -1 ;m++)
-//                                         if(A->colIdxs[m] > A->colIdxs[m+1]){
-//                                                 unsigned int c = A->colIdxs[m];
-//                                                 float v = A->values[m];
-//                                                 A->colIdxs[m] = A->colIdxs[m+1];
-//                                                 A->values[m] = A->values[m+1];
-//                                                 A->colIdxs[m+1] =c;
-//                                                 A->values[m+1] = v;
-
-//                                         }
-
-//                         // count = 0;
-//                         begin= i+1;
-//                 }
-
-
-//         }
-//         return A;
-
-
-
-//  }
 //converts from CSRMatrix to Vector and a vector of indices where the row is not all zeros
 void findNonzeroRows(Vector* v, CSRMatrix* A) {
         unsigned int nnz = 0;
@@ -202,58 +151,6 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
         printf("inbuffer allocated\n");
 
-        // //outBuffer_d allocation
-        // COOMatrix* outBuffer_d;
-        // COOMatrix tmpOutBuffer;
-        // //cudaMalloc((void**)&outBuffer_d,sizeof(COOMatrix));
-        // tmpOutBuffer.numRows = outBuffer->numRows;
-        // tmpOutBuffer.numCols = outBuffer->numCols;
-        // tmpOutBuffer.nnz = outBuffer->nnz;
-        // tmpOutBuffer.capacity = outBuffer->capacity;
-        // cudaMalloc((void**)&tmpOutBuffer.rowIdxs, (outBuffer->capacity) * sizeof(unsigned int));
-        // cudaMalloc((void**)&tmpOutBuffer.colIdxs, (outBuffer->capacity) * sizeof(unsigned int));
-        // cudaMalloc((void**)&tmpOutBuffer.values, (outBuffer->capacity) * sizeof(float));
-        
-
-        // cudaMemcpy(&(tmpOutBuffer.numRows),&(outBuffer->numRows),sizeof(unsigned int),cudaMemcpyHostToDevice);
-        // cudaMemcpy(&(tmpOutBuffer.numCols),&(outBuffer->numCols),sizeof(unsigned int),cudaMemcpyHostToDevice);
-        // cudaMemcpy(&(tmpOutBuffer.nnz),&(outBuffer->nnz),sizeof(unsigned int),cudaMemcpyHostToDevice);
-
-        // cudaMemcpy(tmpOutBuffer.rowIdxs, outBuffer->rowIdxs, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyHostToDevice);
-        // cudaMemcpy(tmpOutBuffer.colIdxs, outBuffer->colIdxs, outBuffer->capacity         * sizeof(unsigned int), cudaMemcpyHostToDevice);
-        // cudaMemcpy(tmpOutBuffer.values, outBuffer->values, outBuffer->capacity * sizeof(float), cudaMemcpyHostToDevice);
-
-        
-
-        // cudaMalloc(&outBuffer_d, sizeof(COOMatrix*));
-
-        // cudaMemcpy(outBuffer_d,&tmpOutBuffer,sizeof(COOMatrix),cudaMemcpyHostToDevice);
-
-        //cudaMemcpy(&(outBuffer_d->nnz), &(tmpOutBuffer.nnz), sizeof(unsigned int*), cudaMemcpyHostToDevice);
-
-        //cudaMemcpy(&out_nnz_d, &out_nnz_h, sizeof(unsigned int*), cudaMemcpyHostToDevice);
-        ////////////////////////////
-        // COOMatrix *outBuffer_d;
-	// unsigned int* out_rowIdxs_d;
-	// unsigned int* out_colIdxs_d;
-        // float* out_values_d;
-        // // outBuffer_d->numRows = outBuffer->numRows;
-        // // outBuffer_d->numCols = outBuffer->numCols;
-        // // outBuffer_d->nnz = outBuffer->nnz;
-        // // outBuffer_d->capacity = outBuffer->capacity;
-	// cudaMalloc((void**)&outBuffer_d, sizeof(COOMatrix));
-	// cudaMalloc((void**)&out_rowIdxs_d, outBuffer->capacity * sizeof(unsigned int));
-	// cudaMalloc((void**)&out_colIdxs_d, outBuffer->capacity * sizeof(unsigned int));
-	// cudaMalloc((void**)&out_values_d, outBuffer->capacity * sizeof(float));
-
-	// //copying outbuffer
-	// cudaMemcpy(outBuffer_d, outBuffer, sizeof(COOMatrix), cudaMemcpyHostToDevice);
-	// cudaMemcpy(out_rowIdxs_d, outBuffer->rowIdxs, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyHostToDevice);
-	// cudaMemcpy(out_colIdxs_d, outBuffer->colIdxs, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyHostToDevice);
-	// cudaMemcpy(out_values_d, outBuffer->values, outBuffer->capacity * sizeof(float), cudaMemcpyHostToDevice);
-	// cudaMemcpy(&(outBuffer_d->rowIdxs), &out_rowIdxs_d, sizeof(unsigned int*), cudaMemcpyHostToDevice);
-	// cudaMemcpy(&(outBuffer_d->colIdxs), &out_colIdxs_d, sizeof(unsigned int*), cudaMemcpyHostToDevice);
-	// cudaMemcpy(&(outBuffer_d->values), &out_values_d, sizeof(float*), cudaMemcpyHostToDevice);
         /////////////////////////
 
         //outBuffer_d allocation
@@ -295,9 +192,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
         CSCMatrix W_d[numLayers];
         for (unsigned int layer = 0; layer < numLayers; ++layer) {
                 W_d[layer].numRows = W[layer]->numRows;
-                unsigned int r = W_d[layer].numRows;
                 W_d[layer].numCols = W[layer]->numCols;
-                unsigned int c = W_d[layer].numCols;
                 W_d[layer].nnz = W[layer]->nnz;
                 W_d[layer].capacity = W[layer]->capacity;
                 cudaMalloc((void**)&W_d[layer].colPtrs, W[layer]->numCols * sizeof(unsigned int));
@@ -333,25 +228,6 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 
                 cudaDeviceSynchronize();
-                //cudaMemcpy(&tmpOutBuffer,outBuffer_d,sizeof(COOMatrix),cudaMemcpyDeviceToHost);
-                
-                
-                // cudaMemcpy(&(tmpOutBuffer.rowIdxs),outBuffer_d->rowIdxs,sizeof(COOMatrix),cudaMemcpyDeviceToHost);
-                // cudaMemcpy(&(tmpOutBuffer.colIdxs),outBuffer_d->colIdxs,sizeof(COOMatrix),cudaMemcpyDeviceToHost);
-                // cudaMemcpy(&(tmpOutBuffer.values),outBuffer_d->values,sizeof(COOMatrix),cudaMemcpyDeviceToHost);
-                //cudaMemcpy( &(tmpOutBuffer.nnz),&(outBuffer_d->nnz), sizeof(unsigned int*),cudaMemcpyDeviceToHost);
-                
-                // outBuffer->numRows =tmpOutBuffer.numRows;
-                // outBuffer->numCols = tmpOutBuffer.numCols ;
-                // outBuffer->nnz = tmpOutBuffer.nnz ;
-                // outBuffer->capacity = tmpOutBuffer.capacity ;
-                // cudaMemcpy(outBuffer->rowIdxs, tmpOutBuffer.rowIdxs,outBuffer->capacity * sizeof(unsigned int),cudaMemcpyDeviceToHost);
-                // cudaMemcpy(outBuffer->colIdxs, tmpOutBuffer.colIdxs,outBuffer->capacity * sizeof(unsigned int),cudaMemcpyDeviceToHost);
-                // cudaMemcpy(outBuffer->values, tmpOutBuffer.values,outBuffer->capacity * sizeof(unsigned int),cudaMemcpyDeviceToHost);
-                // cudaMemcpy(outBuffer->rowIdxs, out_rowIdxs_d, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
-                // cudaMemcpy(outBuffer->colIdxs, out_colIdxs_d, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
-                // cudaMemcpy(outBuffer->values, out_values_d, outBuffer->capacity * sizeof(float), cudaMemcpyDeviceToHost);
-
 
                 cudaMemcpy(outBuffer->rowIdxs, out_rowIdxs_d, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
                 cudaMemcpy(outBuffer->colIdxs, out_colIdxs_d, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
