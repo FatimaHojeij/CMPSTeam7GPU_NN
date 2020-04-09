@@ -89,9 +89,9 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
         cudaMalloc((void**)&inBuffer_d.colIdxs, inBuffer->numCols * sizeof(unsigned int));
         cudaMalloc((void**)&inBuffer_d.values, inBuffer->numCols * sizeof(float));
 	
-	cudaMemcpy(inBuffer_d.rowPtrs, inBuffer->numRows, inBuffer->numRows * sizeof(unsigned int), cudaMemcpyHostToDevice);
-        cudaMemcpy(inBuffer_d.colIdxs, inBuffer->numCols, inBuffer->numCols * sizeof(unsigned int), cudaMemcpyHostToDevice);
-        cudaMemcpy(inBuffer_d.values, inBuffer->numCols, inBuffer->numCols * sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(inBuffer_d.rowPtrs, inBuffer->rowPtrs, inBuffer->numRows * sizeof(unsigned int), cudaMemcpyHostToDevice);
+        cudaMemcpy(inBuffer_d.colIdxs, inBuffer->colIdxs, inBuffer->numCols * sizeof(unsigned int), cudaMemcpyHostToDevice);
+        cudaMemcpy(inBuffer_d.values, inBuffer->values, inBuffer->numCols * sizeof(float), cudaMemcpyHostToDevice);
 	
 	cudaDeviceSynchronize();
 	printf("nnz before kernel call %d \n", outBuffer->nnz);
