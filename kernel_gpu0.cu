@@ -12,7 +12,9 @@ __global__ void spmspm(COOMatrix *result, unsigned int* nnz_out, CSRMatrix A, CS
 	unsigned int rowPtrA = A.rowPtrs[0];
         unsigned int nnzA = A.rowPtrs[0 + 1] - rowPtrA;
 	result->values[0] = nnzA;
-	*nnz_out = A.values[0];
+	unsigned int colPtrB = B.colPtrs[0];
+        unsigned int nnzB = B.colPtrs[0 + 1] - colPtrB;
+	*nnz_out = nnzB;
 }
 
 COOMatrix* createEmptyCOO(unsigned int numRows, unsigned int numCols, unsigned int capacity) {
@@ -147,9 +149,9 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		outBuffer->nnz = *out_nnz_h;
 
 		cudaDeviceSynchronize();
-		printf("gpu value at 0 %f \n", outBuffer->values[0]);
+		printf("nnzA %f \n", outBuffer->values[0]);
 		//printf("cpu value at 0 %f \n", W[layer]->values[0]);
-		//printf("nnz after kernel call %d \n", outBuffer->nnz);
+		printf("nnzB %d \n", outBuffer->nnz);
 	}
 
 
