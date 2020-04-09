@@ -25,6 +25,8 @@ __global__ void spmspm(COOMatrix *result, unsigned int* nnz_out, CSRMatrix A, CS
                                 float sum = 0.0f;
                                 unsigned int ia = 0, ib = 0;
 				while(ia < nnzA && ib < nnzB) { 
+					unsigned int colIdx = colIdxsA[ia];
+                                        unsigned int rowIdx = rowIdxsB[ib];
 					++ia;
 					++ib;
 				}
