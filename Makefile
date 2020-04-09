@@ -1,6 +1,6 @@
 
 NVCC = nvcc
-NVCC_FLAGS = -O3 -g -G -arch compute_30 printf.cu
+NVCC_FLAGS = -O3 -g -G -arch compute_30 
 
 BASE_OBJ = main.o verify.o matrix.o
 OBJ_CPU = $(BASE_OBJ) kernel_cpu.o
