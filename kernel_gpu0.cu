@@ -145,7 +145,8 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		outBuffer->nnz = *out_nnz_h;
 
 		cudaDeviceSynchronize();
-		printf("value at 0 %f \n", outBuffer->values[0]);
+		printf("gpu value at 0 %f \n", outBuffer->values[0]);
+		printf("cpu value at 0 %f \n", W[layer]->values[0]);
 		printf("nnz after kernel call %d \n", outBuffer->nnz);
 	}
 
