@@ -25,11 +25,11 @@ __global__ void spmspm(COOMatrix *result, unsigned int* nnz_out, CSRMatrix A, CS
                                 float sum = 0.0f;
                                 unsigned int ia = 0, ib = 0;
 				while(ia < nnzA && ib < nnzB) { 
-					*nnz_out = r;
-					result->values[0] = c;
-					ia = nnzA + 1;
-					ib = nnzB + 1;
+					++ia;
+					++ib;
 				}
+				*nnz_out = r;
+				result->values[0] = c;
 				
 			}
 		}
