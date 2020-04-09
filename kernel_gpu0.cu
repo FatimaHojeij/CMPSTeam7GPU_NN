@@ -4,16 +4,20 @@
 #include "matrix.h"
 #include "timer.h"
 
+#define THRESHOLD 0.000001
+#define YMAX 32
+#define threads 32
 
 __global__ void spmspm(COOMatrix *result, unsigned int* nnz_out, CSRMatrix A, CSCMatrix B, float bias){ 
-	
+	unsigned int r= blockIdx.y*blockDim.y +threadIdx.y;
+    	unsigned int c= blockIdx.x*blockDim.x + threadIdx.x;
 	result->rowIdxs[0] = 1;
 	result->colIdxs[0] = 1;
 	unsigned int rowPtrA = A.rowPtrs[0];
-        unsigned int nnzA = A.rowPtrs[0 + 1] - rowPtrA;
+        unsigned int nnzA = A.rowPtrs[r + 1] - rowPtrA;
 	result->values[0] = nnzA;
 	unsigned int colPtrB = B.colPtrs[0];
-        unsigned int nnzB = B.colPtrs[0 + 1] - colPtrB;
+        unsigned int nnzB = B.colPtrs[c + 1] - colPtrB;
 	*nnz_out = nnzB;
 }
 
@@ -138,7 +142,9 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		printf("nnz before kernel call %d \n", outBuffer->nnz);
 		printf("Computing layer %u (SpMSpM)", layer);
                 startTime(&timer);
-		spmspm <<<1, 1>>> (outBuffer_d, out_nnz_d, inBuffer_d, W_d[layer], bias);
+		dim3 numThreadsPerBlock(threads, threads);
+        	dim3 numBlocks((W[layer]->numCols + numThreadsPerBlock.x - 1)/numThreadsPerBlock.x,(inBuffer->numRows + numThreadsPerBlock.y - 1)/numThreadsPerBlock.y);
+		spmspm <<<numBlocks, numThreadsPerBlock>>> (outBuffer_d, out_nnz_d, inBuffer_d, W_d[layer], bias);
 		cudaDeviceSynchronize();
 		stopTimeAndPrint(&timer, "");
 		//copy back       
