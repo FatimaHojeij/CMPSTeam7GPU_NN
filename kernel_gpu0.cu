@@ -5,17 +5,20 @@
 #include "timer.h"
 
 
-__global__ void spmspm(COOMatrix *result, unsigned int* nnz_out){ 
+__global__ void spmspm(COOMatrix *result, unsigned int* nnz_out, CSCMatrix B){ 
 	
 	result->rowIdxs[0] = 1;
 	result->colIdxs[0] = 1;
-	result->values[0] = result->nnz;
+	result->values[0] = 5;
 	result->nnz = 10;
 	*nnz_out = 42;
 }
 
 void sparseNN(Vector* result, COOMatrix* outBuffer, COOMatrix** layerWeights, float bias, unsigned int numLayers) {
-
+	CSCMatrix* W[numLayers];
+	for (unsigned int layer = 0; layer < numLayers; ++layer) {
+			W[layer] = createCSCfromCOO(layerWeights[layer]);
+	}
     //outBuffer_d allocation
 	COOMatrix *outBuffer_d; 
 	unsigned int* out_rowIdxs_d;
@@ -43,10 +46,30 @@ void sparseNN(Vector* result, COOMatrix* outBuffer, COOMatrix** layerWeights, fl
 	cudaMemcpy(&(outBuffer_d->colIdxs), &out_colIdxs_d, sizeof(unsigned int*), cudaMemcpyHostToDevice);
 	cudaMemcpy(&(outBuffer_d->values), &out_values_d, sizeof(float*), cudaMemcpyHostToDevice);
 	cudaMemcpy(&out_nnz_d, &out_nnz_h, sizeof(unsigned int*), cudaMemcpyHostToDevice);
+	
+	
+	//Weights
+	CSCMatrix W_d[numLayers];
+        for (unsigned int layer = 0; layer < numLayers; ++layer) {
+                W_d[layer].numRows = W[layer]->numRows;
+                W_d[layer].numCols = W[layer]->numCols;
+                W_d[layer].nnz = W[layer]->nnz;
+                W_d[layer].capacity = W[layer]->capacity;
+                cudaMalloc((void**)&W_d[layer].colPtrs, W[layer]->numCols * sizeof(unsigned int));
+                cudaMalloc((void**)&W_d[layer].rowIdxs, W[layer]->numRows * sizeof(unsigned int));
+                cudaMalloc((void**)&W_d[layer].values, W[layer]->numRows * sizeof(float));
+        }
+
+        for (unsigned int layer = 0; layer < numLayers; ++layer) {
+                cudaMemcpy(W_d[layer].colPtrs, W[layer]->colPtrs, W[layer]->numCols * sizeof(unsigned int), cudaMemcpyHostToDevice);
+                cudaMemcpy(W_d[layer].rowIdxs, W[layer]->rowIdxs, W[layer]->numRows * sizeof(unsigned int), cudaMemcpyHostToDevice);
+                cudaMemcpy(W_d[layer].values, W[layer]->values, W[layer]->numRows * sizeof(float), cudaMemcpyHostToDevice);
+	}
+	
 	cudaDeviceSynchronize();
 	printf("nnz before kernel call %d \n", outBuffer->nnz);
 
-	spmspm <<<1, 1>>> (outBuffer_d, out_nnz_d);
+	spmspm <<<1, 1>>> (outBuffer_d, out_nnz_d, W_d[0]);
 	cudaDeviceSynchronize();
 
 	//copy back       
