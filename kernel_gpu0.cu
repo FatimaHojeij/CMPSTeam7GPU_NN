@@ -109,9 +109,6 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
                 W[layer] = createCSCfromCOO(layerWeights[layer]);
                 if(layer==1 || layer==0){     
                         printf("layer %u\n",layer);   
-                        for(unsigned int j=0; j<W[layer].nnz; ++j){
-                                printf("values : %f\n",W[layer].values[j]);
-                        }
                 }
 	}
 	stopTimeAndPrint(&timer, "Convert weights to CSC");
