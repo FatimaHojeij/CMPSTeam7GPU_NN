@@ -9,7 +9,7 @@ __global__ void spmspm(COOMatrix *result, unsigned int* nnz_out, CSRMatrix A, CS
 	
 	result->rowIdxs[0] = 1;
 	result->colIdxs[0] = 1;
-	result->values[0] = = B.values[0];
+	result->values[0] = B.values[0];
 	*nnz_out = A.values[0];
 }
 
