@@ -79,7 +79,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
                 cudaMemcpy(W_d[layer].values, W[layer]->values, W[layer]->numRows * sizeof(float), cudaMemcpyHostToDevice);
 	}
 	
-	CSRMatrix *inBuffer = *Y0;
+	CSRMatrix *inBuffer = Y0;
 	CSRMatrix inBuffer_d;
         inBuffer_d.numRows = inBuffer->numRows;
         inBuffer_d.numCols = inBuffer->numCols;
