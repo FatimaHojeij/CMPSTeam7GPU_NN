@@ -33,18 +33,19 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
                                 float sum = 0.0f;
                                 unsigned int ia = 0, ib = 0;
                                 while(ia < nnzA && ib < nnzB) { // loops over all non zeros from A and B and stop when there is no more non zero
-                                        unsigned int colIdx = A.colIdxs[rowPtrA + ia]; //single item col index from A
-                                        unsigned int rowIdx = B.rowIdxs[colPtrB+ib]; //single item row index from B
-                                        if(colIdx < rowIdx) {
-                                                ia++;
-                                        } else if(colIdx > rowIdx) {
-                                                ib++;
-                                        } else {
-                                                sum += A.values[rowPtrA + ia ]*B.values[ib+colPtrB];// do the multiplication of the row that matches the column
-                                                ia++;
-                                                ib++;
+                                        if((rowPtrA + ia)<A.nnz &&(colPtrB+ib)<B.nnz){
+                                                unsigned int colIdx = A.colIdxs[rowPtrA + ia]; //single item col index from A
+                                                unsigned int rowIdx = B.rowIdxs[colPtrB+ib]; //single item row index from B
+                                                if(colIdx < rowIdx) {
+                                                        ia++;
+                                                } else if(colIdx > rowIdx) {
+                                                        ib++;
+                                                } else {
+                                                        sum += A.values[rowPtrA + ia ]*B.values[ib+colPtrB];// do the multiplication of the row that matches the column
+                                                        ia++;
+                                                        ib++;
+                                                }
                                         }
-
                                 }
                                 if(sum > THRESHOLD || sum < -THRESHOLD) { //if not smaller than abs(threshold)
                                         sum += bias; //add to it the bias
