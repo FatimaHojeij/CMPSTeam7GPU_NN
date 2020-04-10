@@ -1,149 +1,4 @@
-/*#include <stdio.h>
 
-#include "kernel.h"
-#include "matrix.h"
-#include "timer.h"
-
-#define THRESHOLD 0.000001
-#define YMAX 32
-
-void spmspm(CSRMatrix *result, CSRMatrix *A, CSCMatrix *B, float bias) {
-    unsigned int nnzIdx= 0;
-    for(unsigned int r = 0; r < A->numRows; r++) {
-        unsigned int rowPtrA = A->rowPtrs[r];
-        unsigned int nnzA = A->rowPtrs[r + 1] - rowPtrA;
-        if(nnzA>0) {
-            unsigned int* colIdxsA = A->colIdxs + rowPtrA;
-            float* valueA = A->values + rowPtrA;
-            for(unsigned int c = 0; c < B->numCols; c++) {
-                unsigned int colPtrB = B->colPtrs[c];
-                unsigned int nnzB = B->colPtrs[c + 1] - colPtrB;
-                if(nnzB>0) {
-                    unsigned int* rowIdxsB = B->rowIdxs + colPtrB;
-                    float* valueB = B->values + colPtrB;
-                    // Loop and find intersection
-                    float sum = 0.0f;
-                    unsigned int ia = 0, ib = 0;
-                    while(ia < nnzA && ib < nnzB) {
-                        unsigned int colIdx = colIdxsA[ia];
-                        unsigned int rowIdx = rowIdxsB[ib];
-                        if(colIdx < rowIdx) {
-                            ia++;
-                        } else if(colIdx > rowIdx) {
-                            ib++;
-                        } else {
-                            sum += valueA[ia]*valueB[ib];
-                            ia++;
-                            ib++;
-                        }
-                    }
-
-                    if(sum > THRESHOLD || sum < -THRESHOLD) {
-                        sum += bias;
-                        //Remove negative and zero values
-                        if(sum > 0) {
-                            if(sum>YMAX) {
-                                sum = YMAX;
-                            }
-                            if(nnzIdx >= result->capacity) {
-                                expandCSRCapacity(result, 2*result->capacity);
-                            }
-                            result->colIdxs[nnzIdx] = c;
-                            result->values[nnzIdx] = sum;
-                            ++nnzIdx;
-                        }    
-                    }
-                }
-            }
-        }
-        result->rowPtrs[r + 1] = nnzIdx;
-    }
-    result->nnz = nnzIdx;
-}
-
-void findNonzeroRows(Vector* v, CSRMatrix* A) {
-    unsigned int nnz = 0;
-    for(unsigned int r = 0; r < A->numRows; ++r) {
-        unsigned int rowPtrA = A->rowPtrs[r];
-        unsigned int nnzA = A->rowPtrs[r + 1] - rowPtrA;
-        if(nnzA > 0) {
-            if(nnz >= v->capacity) {
-                expandVectorCapacity(v, 2*v->capacity);
-            }
-            v->data[nnz] = r;
-            ++nnz;
-        }
-    }
-    v->nnz = nnz;
-}
-
-void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeights, float bias, unsigned int numLayers) {
-
-	unsigned const int _numLayers = 120;
-
-    Timer timer;
-
-    // Convert featureVectors to CSR
-    startTime(&timer);
-    CSRMatrix* Y0 = createCSRfromCOO(featureVectors);
-    //stopTimeAndPrint(&timer, "Convert feature vectors to CSR");
-
-    // Convert layer weights to CSC
-    startTime(&timer);
-    CSCMatrix* W[_numLayers];
-    for(unsigned int layer = 0; layer < numLayers; ++layer) {
-        W[layer] = createCSCfromCOO(layerWeights[layer]);
-    }
-    stopTimeAndPrint(&timer, "Convert weights to CSR");
-
-    // Double buffers
-    startTime(&timer);
-    CSRMatrix *tmp = createEmptyCSR(Y0->numRows, Y0->numCols, 2*Y0->nnz);
-    CSRMatrix *inBuffer  = Y0;
-    CSRMatrix *outBuffer = tmp;
-    stopTimeAndPrint(&timer, "Allocate temporary buffer");
-        
-    // Loop over layers
-    for(unsigned int layer = 0; layer < numLayers; ++layer) {
-
-        // SpMSpM
-        printf("Computing layer %u (SpMSpM)", layer);
-        startTime(&timer);
-        spmspm(outBuffer, inBuffer, W[layer], bias);
-        stopTimeAndPrint(&timer, "");
-
-        // Swap buffers
-        CSRMatrix *t = inBuffer;
-        inBuffer = outBuffer;
-        outBuffer = t;
-
-    }
-
-    // Find nonzero rows
-    startTime(&timer);
-    findNonzeroRows(result, inBuffer);
-   //stopTimeAndPrint(&timer, "Find nonzero rows");
-
-    // Free buffers
-    startTime(&timer);
-    freeCSR(Y0);
-    for(unsigned int layer = 0; layer < numLayers; ++layer) {
-        freeCSC(W[layer]);
-    }
-    freeCSR(tmp);
-    stopTimeAndPrint(&timer, "Deallocate memory");
-
-}*/
-
-
-
-
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-
-#include <stdlib.h>
-
-// row+1; swapping; nnzidx; syncthreads
 #include <stdio.h>
 
 #include "kernel.h"
@@ -156,21 +11,18 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 #define threads 32
 
 
-_global_ void spmspm(COOMatrix result, CSRMatrix A, CSCMatrix B, float bias, unsigned int nnz_out) {
+__global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, unsigned int* nnz_out) {
 	unsigned int r = blockIdx.y*blockDim.y + threadIdx.y;
 	unsigned int c = blockIdx.x*blockDim.x + threadIdx.x;
 
 
-	if (r < A.numRows-1 && c < B.numCols-1) {
+	if (r < A.numRows - 1 && c < B.numCols - 1) {
 		unsigned int rowPtrA = A.rowPtrs[r];
 		unsigned int nnzA = A.rowPtrs[r + 1] - rowPtrA;
 
 		unsigned int colPtrB = B.colPtrs[c];
 		unsigned int nnzB = B.colPtrs[c + 1] - colPtrB;
 
-		//printf("rowPtrA: %u, colPtrA: %u\n", rowPtrA, colPtrB);
-		
-		
 
 
 		if (nnzA > 0 && nnzB > 0) { // if a row is not all zeros , we do computation otherwise we skip row
@@ -186,31 +38,31 @@ _global_ void spmspm(COOMatrix result, CSRMatrix A, CSCMatrix B, float bias, uns
 			float sum = 0.0f;
 			unsigned int ia = 0, ib = 0;
 			while (ia < nnzA && ib < nnzB) { // loops over all non zeros from A and B and stop when there is no more non zero
-				
-					unsigned int colIdx = A.colIdxs[rowPtrA + ia]; //single item col index from A
-					unsigned int rowIdx = B.rowIdxs[colPtrB + ib]; //single item row index from B
 
-					if (colIdx < A.numCols && rowIdx < B.numRows) {
+				unsigned int colIdx = A.colIdxs[rowPtrA + ia]; //single item col index from A
+				unsigned int rowIdx = B.rowIdxs[colPtrB + ib]; //single item row index from B
 
-							//printf("A.nnz: %u,  nnzA: %u, rowPtrA +ia: %u, colIdxA:%u, B.nnz: %u, nnzB: %u, colPtrB + ib: %u , rowIdxB: %u \n", A.nnz, nnzA, rowPtrA + ia, colIdx, B.nnz, nnzB, colPtrB + ib, rowIdx);
+				if (colIdx < A.numCols && rowIdx < B.numRows) {
+
+					//printf("A.nnz: %u,  nnzA: %u, rowPtrA +ia: %u, colIdxA:%u, B.nnz: %u, nnzB: %u, colPtrB + ib: %u , rowIdxB: %u \n", A.nnz, nnzA, rowPtrA + ia, colIdx, B.nnz, nnzB, colPtrB + ib, rowIdx);
 
 
-							if (rowIdx < B.nnz && colIdx < A.nnz) {
-								if (colIdx < rowIdx) {
-									ia++;
-								}
-								else if (colIdx > rowIdx) {
-									ib++;
-								}
-								else {
-									sum += A.values[rowPtrA + ia] * B.values[ib + colPtrB];// do the multiplication of the row that matches the column
-									ia++;
-									ib++;
-								}
-							}
+					if (rowIdx < B.nnz && colIdx < A.nnz) {
+						if (colIdx < rowIdx) {
+							ia++;
+						}
+						else if (colIdx > rowIdx) {
+							ib++;
+						}
+						else {
+							sum += A.values[rowPtrA + ia] * B.values[ib + colPtrB];// do the multiplication of the row that matches the column
+							ia++;
+							ib++;
+						}
 					}
-					else
-						break;
+				}
+				else
+					break;
 			}
 			if (sum > THRESHOLD || sum < -THRESHOLD) { //if not smaller than abs(threshold)
 				sum += bias; //add to it the bias
@@ -267,7 +119,6 @@ COOMatrix* createEmptyCOO(unsigned int numRows, unsigned int numCols, unsigned i
 }
 void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeights, float bias, unsigned int numLayers) {
 
-	unsigned const int _numLayers = 120;
 
 
 	Timer timer;
@@ -279,7 +130,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 	// Convert layer weights to CSC
 	startTime(&timer);
-	CSCMatrix* W[_numLayers];
+	CSCMatrix* W[numLayers];
 	for (unsigned int layer = 0; layer < numLayers; ++layer) {
 		W[layer] = createCSCfromCOO(layerWeights[layer]);
 	}
@@ -364,7 +215,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 
 	// allocating W_d
-	CSCMatrix W_d[_numLayers];
+	CSCMatrix W_d[numLayers];
 	for (unsigned int layer = 0; layer < numLayers; ++layer) {
 		W_d[layer].numRows = W[layer]->numRows;
 		W_d[layer].numCols = W[layer]->numCols;
