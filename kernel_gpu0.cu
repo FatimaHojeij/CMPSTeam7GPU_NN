@@ -36,14 +36,16 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
                                         if((rowPtrA + ia)<A.nnz &&(colPtrB+ib)<B.nnz){
                                                 unsigned int colIdx = A.colIdxs[rowPtrA + ia]; //single item col index from A
                                                 unsigned int rowIdx = B.rowIdxs[colPtrB+ib]; //single item row index from B
-                                                if(colIdx < rowIdx) {
-                                                        ia++;
-                                                } else if(colIdx > rowIdx) {
-                                                        ib++;
-                                                } else {
-                                                        sum += A.values[rowPtrA + ia ]*B.values[ib+colPtrB];// do the multiplication of the row that matches the column
-                                                        ia++;
-                                                        ib++;
+                                                if(rowIdx< B.nnz && colIdx< A.nnz){
+                                                        if(colIdx < rowIdx) {
+                                                                ia++;
+                                                        } else if(colIdx > rowIdx) {
+                                                                ib++;
+                                                        } else {
+                                                                sum += A.values[rowPtrA + ia ]*B.values[ib+colPtrB];// do the multiplication of the row that matches the column
+                                                                ia++;
+                                                                ib++;
+                                                        }
                                                 }
                                         }
                                 }
@@ -109,9 +111,6 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 	CSCMatrix* W[numLayers];
 	for (unsigned int layer = 0; layer < numLayers; ++layer) {
                 W[layer] = createCSCfromCOO(layerWeights[layer]);
-                if(layer==1 || layer==0){     
-                        printf("layer %u\n",layer);   
-                }
 	}
 	stopTimeAndPrint(&timer, "Convert weights to CSC");
 
@@ -241,9 +240,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
                 cudaDeviceSynchronize();
                 outBuffer->nnz = *out_nnz_h;
                 printf("nnz %d\n", outBuffer->nnz);
-                // for(int i =0; i<outBuffer->nnz;++i){
-                //         printf(" i = %d, row = %d, col = %d\n", i,outBuffer->rowIdxs[i],outBuffer->colIdxs[i]);
-                // }
+
 
                 cudaDeviceSynchronize();
                 stopTimeAndPrint(&timer, "");
