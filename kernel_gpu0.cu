@@ -21,26 +21,26 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
                 unsigned int nnzA = A.rowPtrs[r + 1] - rowPtrA;
                 if(nnzA>0) { // if a row is not all zeros , we do computation otherwise we skip row
                         //ptrs to cols and vals of A[r]
-                        unsigned int* colIdxsA = A.colIdxs + rowPtrA;
-                        float* valueA = A.values + rowPtrA;
+                        //unsigned int* colIdxsA = A.colIdxs + rowPtrA;
+                        //float* valueA = A.values + rowPtrA;
                         //we will take one column of B
                         unsigned int colPtrB = B.colPtrs[c];
                         unsigned int nnzB = B.colPtrs[c + 1] - colPtrB;
                         if(nnzB>0) { // if a col in B is not all zeros, we do computation otherwise skip//ptrs to rows and vals of B[c]
-                                unsigned int* rowIdxsB = B.rowIdxs + colPtrB;
-                                float* valueB = B.values + colPtrB;
+                                //unsigned int* rowIdxsB = B.rowIdxs[colPtrB];
+                                //float* valueB = B.values[colPtrB];
                                 // Loop and find intersection
                                 float sum = 0.0f;
                                 unsigned int ia = 0, ib = 0;
                                 while(ia < nnzA && ib < nnzB) { // loops over all non zeros from A and B and stop when there is no more non zero
-                                        unsigned int colIdx = colIdxsA[ia]; //single item col index from A
-                                        unsigned int rowIdx = rowIdxsB[ib]; //single item row index from B
+                                        unsigned int colIdx = A.colIdxs[rowPtrA + ia]; //single item col index from A
+                                        unsigned int rowIdx = B.rowIdxs[colPtrB+ib]; //single item row index from B
                                         if(colIdx < rowIdx) {
                                                 ia++;
                                         } else if(colIdx > rowIdx) {
                                                 ib++;
                                         } else {
-                                                sum += valueA[ia]*valueB[ib];// do the multiplication of the row that matches the column
+                                                sum += A.values[rowPtrA + ia ]*B.values[ib+colPtrB];// do the multiplication of the row that matches the column
                                                 ia++;
                                                 ib++;
                                         }
