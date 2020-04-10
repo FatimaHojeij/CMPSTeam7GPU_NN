@@ -19,21 +19,23 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
         if(r < A.numRows && c < B.numCols){
                 unsigned int rowPtrA = A.rowPtrs[r];
                 unsigned int nnzA = A.rowPtrs[r + 1] - rowPtrA;
-                if(nnzA>0) { // if a row is not all zeros , we do computation otherwise we skip row
+
+                unsigned int colPtrB = B.colPtrs[c];
+                unsigned int nnzB = B.colPtrs[c + 1] - colPtrB;
+                if(nnzA>0 && nnzB>0) { // if a row is not all zeros , we do computation otherwise we skip row
                         //ptrs to cols and vals of A[r]
                         //unsigned int* colIdxsA = A.colIdxs + rowPtrA;
                         //float* valueA = A.values + rowPtrA;
                         //we will take one column of B
-                        unsigned int colPtrB = B.colPtrs[c];
-                        unsigned int nnzB = B.colPtrs[c + 1] - colPtrB;
-                        if(nnzB>0) { // if a col in B is not all zeros, we do computation otherwise skip//ptrs to rows and vals of B[c]
+ 
+                         // if a col in B is not all zeros, we do computation otherwise skip//ptrs to rows and vals of B[c]
                                 //unsigned int* rowIdxsB = B.rowIdxs[colPtrB];
                                 //float* valueB = B.values[colPtrB];
                                 // Loop and find intersection
                                 float sum = 0.0f;
                                 unsigned int ia = 0, ib = 0;
                                 while(ia < nnzA && ib < nnzB) { // loops over all non zeros from A and B and stop when there is no more non zero
-                                        if((rowPtrA + ia)<A.nnz &&(colPtrB+ib)<B.nnz){
+                                        if((rowPtrA + ia)<A.nnz &&(colPtrB+ib)<B.nnz && (rowPtrA + ia)<A.capacity && (colPtrB + ib)<B.capacity){
                                                 unsigned int colIdx = A.colIdxs[rowPtrA + ia]; //single item col index from A
                                                 unsigned int rowIdx = B.rowIdxs[colPtrB+ib]; //single item row index from B
                                                 if(rowIdx< B.nnz && colIdx< A.nnz){
@@ -62,7 +64,7 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
                                                 result->values[nnzIndxTemp] = sum;
                                         }
                                 }
-                        }
+                        
 
                 }
         }
@@ -95,6 +97,11 @@ COOMatrix* createEmptyCOO(unsigned int numRows, unsigned int numCols, unsigned i
         coo->numCols = numCols;
         coo->nnz = 0;
         coo->capacity = capacity;
+        for(unsigned int i=0; i<coo->capacity;++i){
+                coo->rowIdxs[i] =0 ;
+                coo->colIdx[i] =0 ;
+                coo->values[i] =0.0f ;
+        }
         return coo;
 }
 void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeights, float bias, unsigned int numLayers) {
@@ -116,7 +123,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 	// Double buffers
 	startTime(&timer);
-	COOMatrix *tmp = createEmptyCOO(Y0->numRows, Y0->numCols, 5 * Y0->nnz);
+	COOMatrix *tmp = createEmptyCOO(Y0->numRows, Y0->numCols, Y0->numRows*Y0->numCols);
 	CSRMatrix *inBuffer = Y0;
 	COOMatrix *outBuffer = tmp;
 	stopTimeAndPrint(&timer, "Allocate temporary buffer");
