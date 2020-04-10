@@ -1,3 +1,5 @@
+/*#include <stdio.h>
+
 #include "kernel.h"
 #include "matrix.h"
 #include "timer.h"
@@ -159,7 +161,7 @@ _global_ void spmspm(COOMatrix result, CSRMatrix A, CSCMatrix B, float bias, uns
 	unsigned int c = blockIdx.x*blockDim.x + threadIdx.x;
 
 
-	if (r < A.numRows && c < B.numCols) {
+	if (r < A.numRows-1 && c < B.numCols-1) {
 		unsigned int rowPtrA = A.rowPtrs[r];
 		unsigned int nnzA = A.rowPtrs[r + 1] - rowPtrA;
 
