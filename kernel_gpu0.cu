@@ -25,13 +25,13 @@ __global__ void spmspm(COOMatrix *result, unsigned int* nnz_out, CSRMatrix A, CS
                                 float sum = 0.0f;
                                 unsigned int ia = 0, ib = 0;
 				while(ia < nnzA && ib < nnzB) { 
-// 					unsigned int colIdx = colIdxsA[ia];
-//                                         unsigned int rowIdx = rowIdxsB[ib];
-// 					if(colIdx < rowIdx) {
-//                                                 ia++;
-//                                         } else if(colIdx > rowIdx) {
-//                                                 ib++;
-//                                         }
+					unsigned int colIdx = colIdxsA[ia];
+                                        unsigned int rowIdx = rowIdxsB[ib];
+					if(colIdx < rowIdx) {
+                                                ia++;
+                                        } else if(colIdx > rowIdx) {
+                                                ib++;
+                                        }
 					++ia;
 					++ib;
 				}
@@ -166,7 +166,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
                 startTime(&timer);
 		dim3 numThreadsPerBlock(threads, threads);
         	dim3 numBlocks((W[layer]->numCols + numThreadsPerBlock.x - 1)/numThreadsPerBlock.x,(inBuffer->numRows + numThreadsPerBlock.y - 1)/numThreadsPerBlock.y);
-		spmspm <<<numBlocks, numThreadsPerBlock>>> (outBuffer_d, out_nnz_d, inBuffer_d, W_d[layer], bias);
+		spmspm <<<1, 1>>> (outBuffer_d, out_nnz_d, inBuffer_d, W_d[layer], bias);
 		cudaDeviceSynchronize();
 		stopTimeAndPrint(&timer, "");
 		//copy back       
