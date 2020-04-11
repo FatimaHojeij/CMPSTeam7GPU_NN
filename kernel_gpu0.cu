@@ -75,7 +75,8 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
 __global__ void histogram_private_kernel(unsigned int* rowIdxs, unsigned int* rowPtrs, unsigned int nnz,unsigned int numRows) {
     
         unsigned int tid=threadIdx.x;
-        __shared__  int bins_s[numRows+1];
+        unsigned int num_bins = numRows+1;
+        __shared__  int bins_s[num_bins];
         unsigned int t =blockDim.x*blockIdx.x+ threadIdx.x;
         
     
@@ -87,7 +88,7 @@ __global__ void histogram_private_kernel(unsigned int* rowIdxs, unsigned int* ro
         __syncthreads();
         //fill bins_s
         if(t < nnz) {
-            unsigned int rIdx = rowIdx[t];
+            unsigned int rIdx = rowIdxs[t];
             atomicAdd(&bins_s[rIdx], 1);
         }
         
@@ -241,7 +242,7 @@ void scan_gpu_d(unsigned int* input_d, unsigned int* output_d, unsigned int N) {
 
 }
 
-__global__ convertFromCOOToCSR_kernel(COOMatrix* A, unsigned int* rowPtrs, unsigned int* colIdxs, float* values){
+__global__ void convertFromCOOToCSR_kernel(COOMatrix *A, unsigned int* rowPtrs, unsigned int* colIdxs, float* values){
         
         int i = threadIdx.x + blockIdx.x*blockDim.x;
         
@@ -255,7 +256,7 @@ __global__ convertFromCOOToCSR_kernel(COOMatrix* A, unsigned int* rowPtrs, unsig
                 if(nnzA>0){
 
                       for(unsigned int j = rowPtrA; j < nnzA; ++j){
-                        if(atomicCAS(&colIdxs[j],-1,col)==-1){
+                        if(atomicCAS(&colIdxs[j],UINT_MAX,col)==UINT_MAX){
                                 values[j]=val;
                                 break;
                         }
@@ -279,7 +280,7 @@ __global__ convertFromCOOToCSR_kernel(COOMatrix* A, unsigned int* rowPtrs, unsig
                                         //swap float
                                         float valtmp = values[k];
                                         values[k] = values[k+1];
-                                        values[k+1]=tmp;
+                                        values[k+1]=valtmp;
                                 }
                         }
                 }
@@ -461,7 +462,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
                 
                 cudaMemcpy(out_nnz_h, out_nnz_d, sizeof(unsigned int), cudaMemcpyDeviceToHost);
                 cudaMemcpy(out_nnz_d, out_nnz_h, sizeof(unsigned int), cudaMemcpyHostToDevice);
-                cudaMemcpy(outBuffer_d->nnz, *out_nnz_h, sizeof(unsigned int), cudaMemcpyHostToDevice);
+                outBuffer_d->nnz= *out_nnz_h;
 
                 tmpInBuffer.nnz = *out_nnz_h;
                 
@@ -474,9 +475,9 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
                 //calling histogram to fill rowPtrs of inBuffer
                 unsigned int numThreadsPerBlock = 1024;
-                unsigned int numBlocks = ( *out_nnz_h + numThreadsPerBlock - 1)/numThreadsPerBlock;
+                numBlocks = ( *out_nnz_h + numThreadsPerBlock - 1)/numThreadsPerBlock;
 
-                histogram_private_kernel <<< numBlocks, numThreadsPerBlock >>> (out_rowIdxs_d, , rowPtrstmp_d, *out_nnz_h, tmpInBuffer.numRows);
+                histogram_private_kernel<<< numBlocks, numThreadsPerBlock >>>(out_rowIdxs_d, rowPtrstmp_d, *out_nnz_h, tmpInBuffer.numRows);
 
                 cudaDeviceSynchronize();
 
@@ -519,7 +520,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
                 numBlocks = ( *out_nnz_h + numThreadsPerBlock - 1)/numThreadsPerBlock;
 
                 for(unsigned int i =0 ; i<tmpInBuffer.nnz;++i){
-                        cudaMemset(&tmpInBuffer.colIdxs[i],-1,sizeof(unsigned int));
+                        cudaMemset(&tmpInBuffer.colIdxs[i],UINT_MAX,sizeof(unsigned int));
                 }
                 
                 convertFromCOOToCSR_kernel <<< numBlocks, numThreadsPerBlock>>> (outBuffer_d, tmpInBuffer.rowPtrs, tmpInBuffer.colIdxs, tmpInBuffer.values);
@@ -610,7 +611,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
         // cudaFree(tmpOutBuffer.colIdxs);
         // cudaFree(tmpOutBuffer.values);
 
-        cudaFree(inBuffer_d);
+        //cudaFree(inBuffer_d);
 
         free(inBuffer);
         free(outBuffer);
