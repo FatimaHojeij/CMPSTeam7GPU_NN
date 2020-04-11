@@ -4,12 +4,15 @@
 #include "kernel.h"
 #include "matrix.h"
 #include "timer.h"
-#include <limits.h>
+
 
 #define THRESHOLD 0.000001
 #define YMAX 32
 #define threads 32
 #define BLOCK_DIM 1024
+
+
+__constant__ unsigned int u_Max;
 
 __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, unsigned int* nnz_out) {
     unsigned int r= blockIdx.y*blockDim.y +threadIdx.y;
@@ -257,7 +260,7 @@ __global__ void convertFromCOOToCSR_kernel(COOMatrix *A, unsigned int* rowPtrs, 
                 if(nnzA>0){
 
                       for(unsigned int j = rowPtrA; j < nnzA; ++j){
-                        if(atomicCAS(&colIdxs[j],UINT_MAX,col)==UINT_MAX){
+                        if(atomicCAS(&colIdxs[j],UINT_MAX,col)==u_Max){
                                 values[j]=val;
                                 break;
                         }
@@ -435,7 +438,8 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
         
 
-
+        unsigned int uMax = (unsigned int)~0;
+        cudaMemcpyToSymbol(&u_Max,&uMax,sizeof(unsigned int));
 
         //kernel loop
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -521,7 +525,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
                 numBlocks = ( *out_nnz_h + numThreadsPerBlock - 1)/numThreadsPerBlock;
 
                 for(unsigned int i =0 ; i<tmpInBuffer.nnz;++i){
-                        cudaMemset(&(tmpInBuffer.colIdxs[i]),UINT_MAX,sizeof(unsigned int));
+                        cudaMemset(&(tmpInBuffer.colIdxs[i]),u_Max,sizeof(unsigned int));
                 }
                 
                 convertFromCOOToCSR_kernel <<< numBlocks, numThreadsPerBlock>>> (outBuffer_d, tmpInBuffer.rowPtrs, tmpInBuffer.colIdxs, tmpInBuffer.values);
