@@ -80,7 +80,7 @@ __global__ void histogram_private_kernel(unsigned int* rowIdxs, unsigned int* ro
     
         unsigned int tid=threadIdx.x;
         const int size = numRows+1;
-        unsigned int* bins_s = (unsigned int*)array[size];
+        unsigned int* bins_s = (unsigned int*)array;
         unsigned int t =blockDim.x*blockIdx.x+ threadIdx.x;
         
     
@@ -467,7 +467,8 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
                 
                 cudaMemcpy(out_nnz_h, out_nnz_d, sizeof(unsigned int), cudaMemcpyDeviceToHost);
                 cudaMemcpy(out_nnz_d, out_nnz_h, sizeof(unsigned int), cudaMemcpyHostToDevice);
-                cudaMemcpy(&(outBuffer_d->nnz), out_nnz_h,sizeof(unsigned int),cudaMemcpyHostToDevice);
+                
+                cudaMemcpy((outBuffer_d->nnz), *out_nnz_h,sizeof(unsigned int),cudaMemcpyHostToDevice);
 
                 tmpInBuffer.nnz = *out_nnz_h;
 
