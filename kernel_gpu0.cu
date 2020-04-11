@@ -4,7 +4,7 @@
 #include "kernel.h"
 #include "matrix.h"
 #include "timer.h"
-
+#include <limits.h>
 
 #define THRESHOLD 0.000001
 #define YMAX 32
@@ -72,11 +72,12 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
 }
 
 
+extern __shared__ unsigned int array[];
 __global__ void histogram_private_kernel(unsigned int* rowIdxs, unsigned int* rowPtrs, unsigned int nnz,unsigned int numRows) {
     
         unsigned int tid=threadIdx.x;
         const int size = numRows+1;
-        __shared__  unsigned int bins_s[size];
+        unsigned int* bins_s = (unsigned int*)array[size];
         unsigned int t =blockDim.x*blockIdx.x+ threadIdx.x;
         
     
@@ -123,7 +124,7 @@ __global__ void scan_kernel(unsigned int* input, unsigned int* output, unsigned 
 	}
 	else
 	{
-		input_s[tid] == 0;
+		input_s[tid] =0;
 	}
 	if (i + BLOCK_DIM < N)
 	{
@@ -520,7 +521,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
                 numBlocks = ( *out_nnz_h + numThreadsPerBlock - 1)/numThreadsPerBlock;
 
                 for(unsigned int i =0 ; i<tmpInBuffer.nnz;++i){
-                        cudaMemset(&tmpInBuffer.colIdxs[i],UINT_MAX,sizeof(unsigned int));
+                        cudaMemset(&(tmpInBuffer.colIdxs[i]),UINT_MAX,sizeof(unsigned int));
                 }
                 
                 convertFromCOOToCSR_kernel <<< numBlocks, numThreadsPerBlock>>> (outBuffer_d, tmpInBuffer.rowPtrs, tmpInBuffer.colIdxs, tmpInBuffer.values);
