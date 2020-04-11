@@ -75,8 +75,8 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
 __global__ void histogram_private_kernel(unsigned int* rowIdxs, unsigned int* rowPtrs, unsigned int nnz,unsigned int numRows) {
     
         unsigned int tid=threadIdx.x;
-        unsigned int num_bins = numRows+1;
-        __shared__  int bins_s[num_bins];
+        const int size = numRows+1;
+        __shared__  unsigned int bins_s[size];
         unsigned int t =blockDim.x*blockIdx.x+ threadIdx.x;
         
     
@@ -451,7 +451,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
                 
 
                 dim3 numThreadsPerBlock3(threads, threads);
-                dim3 numBlocks3((W_d[layer].numCols + numThreadsPerBlock.x - 1)/numThreadsPerBlock.x,(inBuffer->numRows + numThreadsPerBlock.y - 1)/numThreadsPerBlock.y);
+                dim3 numBlocks3((W_d[layer].numCols + numThreadsPerBlock3.x - 1)/numThreadsPerBlock3.x,(inBuffer->numRows + numThreadsPerBlock3.y - 1)/numThreadsPerBlock3.y);
                 cudaMemset(out_nnz_d,0,sizeof(unsigned int));
 
 
