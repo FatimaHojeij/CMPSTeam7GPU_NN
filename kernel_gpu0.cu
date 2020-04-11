@@ -467,10 +467,10 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
                 
                 cudaMemcpy(out_nnz_h, out_nnz_d, sizeof(unsigned int), cudaMemcpyDeviceToHost);
                 cudaMemcpy(out_nnz_d, out_nnz_h, sizeof(unsigned int), cudaMemcpyHostToDevice);
-                outBuffer_d->nnz= *out_nnz_h;
+                cudaMemcpy(&(outBuffer_d->nnz), out_nnz_h,sizeof(unsigned int),cudaMemcpyHostToDevice);
 
                 tmpInBuffer.nnz = *out_nnz_h;
-                
+
                 unsigned int *rowPtrstmp, *rowPtrstmp_d;
                 rowPtrstmp = (unsigned int *)malloc((tmpInBuffer.numRows+1) * sizeof(unsigned int));
                 cudaMalloc((void**)&rowPtrstmp_d, (tmpInBuffer.numRows+1)* sizeof(unsigned int));
@@ -525,7 +525,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
                 numBlocks = ( *out_nnz_h + numThreadsPerBlock - 1)/numThreadsPerBlock;
 
                 for(unsigned int i =0 ; i<tmpInBuffer.nnz;++i){
-                        cudaMemset(&(tmpInBuffer.colIdxs[i]),u_Max,sizeof(unsigned int));
+                        cudaMemset(&(tmpInBuffer.colIdxs[i]),uMax,sizeof(unsigned int));
                 }
                 
                 convertFromCOOToCSR_kernel <<< numBlocks, numThreadsPerBlock>>> (outBuffer_d, tmpInBuffer.rowPtrs, tmpInBuffer.colIdxs, tmpInBuffer.values);
