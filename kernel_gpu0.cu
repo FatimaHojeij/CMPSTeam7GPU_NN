@@ -1,3 +1,9 @@
+/*#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
+
+#include <stdlib.h>*/
+
+
 
 // row+1; swapping; nnzidx; syncthreads
 #include <stdio.h>
@@ -249,20 +255,29 @@ void scan_gpu_d(unsigned int* input_d, unsigned int* output_d, unsigned int N) {
 
 }
 
-__global__ void convertFromCOOToCSR_kernel(unsigned int* incolIdxs, unsigned int* incolIdxs,float* invalues, unsigned int* rowPtrs, unsigned int* colIdxs, float* values, unsigned int nnz, unsigned int numRows) {
+__global__ void convertFromCOOToCSR_kernel(unsigned int* inrowIdxs, unsigned int* incolIdxs, float* invalues, unsigned int* rowPtrs, unsigned int* colIdxs, float* values, unsigned int nnz, unsigned int numRows, unsigned int numCols) {
 
-	int i = threadIdx.x + blockIdx.x*blockDim.x;
+	unsigned int i = threadIdx.x + blockIdx.x*blockDim.x;
 
-	if (i < nnz) {
+	/*the illegal mem access is because when i reaches at some point, colIdxs[i] is out of bound so we need
+	to change the boundary condition here*/
+	/*if (i < nnz) {
+		colIdxs[i] = UINT_MAX;
+	}*/
+
+	/*
+	this seems to have worked as memory bound
+	*/
+	if (i < numCols) {
 		colIdxs[i] = UINT_MAX;
 	}
 
 	__syncthreads();
 
 	if (i < nnz) {
-		unsigned int row = inrowIdxs[i];
-		unsigned int col = incolIdxs[i];
-		unsigned int val = invalues[i];
+		unsigned int row = inrowIdxs[i];// getting a row index   
+		unsigned int col = incolIdxs[i];// getting a col index
+	    float val = invalues[i];// getting the value for specific row and col
 
 		unsigned int rowPtrA = rowPtrs[row];
 		unsigned int nnzA = rowPtrs[row + 1] - rowPtrs[row];
@@ -281,23 +296,33 @@ __global__ void convertFromCOOToCSR_kernel(unsigned int* incolIdxs, unsigned int
 
 	//after filling swap columns and values
 	if (i < numRows) {
+		int g = 0;
 		unsigned int rowPtrA = rowPtrs[i];
 		unsigned int nnzA = rowPtrs[i + 1] - rowPtrs[i];
-		for (unsigned int j = rowPtrA; j < nnzA - 1;++j) {
-			for (unsigned int k = rowPtrA; k < nnzA - j - 1; ++k) {
-				if (colIdxs[k] > colIdxs[k + 1]) {
-					//swap col
-					unsigned int tmp = colIdxs[k];
-					colIdxs[k] = colIdxs[k + 1];
-					colIdxs[k + 1] = tmp;
-					//swap float
-					float valtmp = values[k];
-					values[k] = values[k + 1];
-					values[k + 1] = valtmp;
+		if (nnzA > 0)
+		{
+			
+			for (unsigned int j = rowPtrA; j < nnzA - 1;++j) {
+				g = 1;
+				for (unsigned int k = rowPtrA; k < nnzA - j - 1; ++k) {
+					if (colIdxs[k] > colIdxs[k + 1]) {
+						//swap col
+						//printf("swapping of k: %u  k+1: %u \n", colIdxs[k], colIdxs[k + 1]);
+						unsigned int tmp = colIdxs[k];
+						colIdxs[k] = colIdxs[k + 1];
+						colIdxs[k + 1] = tmp;
+						//printf("after swapping of k: %u  k+1: %u \n", colIdxs[k], colIdxs[k + 1]);
+						//swap float
+						float valtmp = values[k];
+						values[k] = values[k + 1];
+						values[k + 1] = valtmp;
+					}
 				}
 			}
 		}
+		//printf("thread: %u is %d \n", i, g);
 	}
+
 
 }
 //converts from CSRMatrix to Vector and a vector of indices where the row is not all zeros
@@ -345,7 +370,8 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 	// Convert layer weights to CSC
 	startTime(&timer);
-	CSCMatrix* W[numLayers];
+	//CSCMatrix* W[numLayers];
+	CSCMatrix* W[_numLayers];
 	for (unsigned int layer = 0; layer < numLayers; ++layer) {
 		W[layer] = createCSCfromCOO(layerWeights[layer]);
 	}
@@ -425,7 +451,8 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 
 	// allocating W_d
-	CSCMatrix W_d[numLayers];
+	//CSCMatrix W_d[numLayers];
+	CSCMatrix W_d[_numLayers];
 	for (unsigned int layer = 0; layer < numLayers; ++layer) {
 		W_d[layer].numRows = W[layer]->numRows;
 		W_d[layer].numCols = W[layer]->numCols;
@@ -488,9 +515,9 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		cudaMemcpy(rowPtrstmp_d, rowPtrstmp, (tmpInBuffer.numRows + 1) * sizeof(unsigned int), cudaMemcpyHostToDevice);
 
 		cudaDeviceSynchronize();
-        stopTimeAndPrint(&timer, "");
+		stopTimeAndPrint(&timer, "");
 
-        startTime(&timer);
+		startTime(&timer);
 		//calling histogram to fill rowPtrs of inBuffer
 		unsigned int numThreadsPerBlock = 1024;
 		unsigned int numBlocks = (*out_nnz_h + numThreadsPerBlock - 1) / numThreadsPerBlock;
@@ -504,9 +531,9 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		cudaDeviceSynchronize();
 
-        printf("Histogram time for layer %u",layer);
-        stopTimeAndPrint(&timer, "");
-        startTime(&timer);
+		printf("Histogram time for layer %u", layer);
+		stopTimeAndPrint(&timer, "");
+		startTime(&timer);
 		//calling the scan kernel to scan kernel ptrs
 
 		const unsigned int numElementsPerBlock = 2 * numThreadsPerBlock;
@@ -542,14 +569,15 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		printf("test %u", rowPtrstmp[tmpInBuffer.numRows]);
 
+		
 
 		// Free memory
 
 		cudaFree(partialSums_d);
 		cudaFree(rowPtrstmp_d);
-        printf("Scan time for layer %u",layer);
-        stopTimeAndPrint(&timer, "");
-        startTime(&timer);
+		printf("Scan time for layer %u", layer);
+		stopTimeAndPrint(&timer, "");
+		startTime(&timer);
 
 		//calling convert
 
@@ -559,14 +587,46 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 			cudaMemset(&(tmpInBuffer.colIdxs[i]), uMax, sizeof(unsigned int));
 		}*/
 
-		convertFromCOOToCSR_kernel << < numBlocks, numThreadsPerBlock >> > (out_rowIdxs_d,out_colIdxs_d,out_values_d, tmpInBuffer.rowPtrs, tmpInBuffer.colIdxs, tmpInBuffer.values, *out_nnz_h, tmpInBuffer.numRows);
+		cudaMemcpy(outBuffer->colIdxs, out_colIdxs_d, sizeof(unsigned int) * (*out_nnz_h), cudaMemcpyDeviceToHost);
+
+		/*for (unsigned int i = 0; i < (*out_nnz_h);++i) {
+			printf("what's up? %u \n", outBuffer->colIdxs[i]);
+		}*/
+
+		
+
+
+		convertFromCOOToCSR_kernel <<< numBlocks, numThreadsPerBlock >> > (out_rowIdxs_d, out_colIdxs_d, out_values_d, tmpInBuffer.rowPtrs, tmpInBuffer.colIdxs, tmpInBuffer.values, *out_nnz_h, tmpInBuffer.numRows , tmpInBuffer.numCols);
 
 		cudaDeviceSynchronize();
 
+
+		/*this here gave an illegal mem address that's why we went into the kernel and checked 
+		where the error is from and after some checks, we found out what was causing the error in the convertFromCOOToCSR kernel 
+		the error is commented up in the kernel*/
+		cudaError_t error = cudaGetLastError();
+		if (error != cudaSuccess)
+		{
+			// print the CUDA error message and exit
+			printf("CUDA error: %s\n", cudaGetErrorString(error));
+			exit(-1);
+		}
+
+		
+
+
+		cudaMemcpy(outBuffer->colIdxs, tmpInBuffer.colIdxs, sizeof(unsigned int) * (*out_nnz_h), cudaMemcpyDeviceToHost);
+
+
+
+
+
+
+
 		//empty the outbuffer
-        printf("Converting time for layer %u",layer);
-        stopTimeAndPrint(&timer, "");
-        startTime(&timer);
+		printf("Converting time for layer %u", layer);
+		stopTimeAndPrint(&timer, "");
+		startTime(&timer);
 
 		cudaMemcpy(outBuffer->rowIdxs, out_rowIdxs_d, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
 		cudaMemcpy(outBuffer->colIdxs, out_colIdxs_d, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
@@ -578,9 +638,9 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 
 		cudaDeviceSynchronize();
-        
-        printf("switching buffers time for layer %u",layer);
-        stopTimeAndPrint(&timer, "");
+
+		printf("switching buffers time for layer %u", layer);
+		stopTimeAndPrint(&timer, "");
 
 
 
