@@ -79,7 +79,6 @@ extern __shared__ unsigned int array[];
 __global__ void histogram_private_kernel(unsigned int* rowIdxs, unsigned int* rowPtrs, unsigned int nnz,unsigned int numRows) {
     
         unsigned int tid=threadIdx.x;
-        const int size = numRows+1;
         unsigned int* bins_s = (unsigned int*)array;
         unsigned int t =blockDim.x*blockIdx.x+ threadIdx.x;
         
@@ -246,11 +245,11 @@ void scan_gpu_d(unsigned int* input_d, unsigned int* output_d, unsigned int N) {
 
 }
 
-__global__ void convertFromCOOToCSR_kernel(COOMatrix *A, unsigned int* rowPtrs, unsigned int* colIdxs, float* values){
+__global__ void convertFromCOOToCSR_kernel(COOMatrix *A, unsigned int* rowPtrs, unsigned int* colIdxs, float* values, unsigned int nnz, unsigned int numRows){
         
         int i = threadIdx.x + blockIdx.x*blockDim.x;
         
-        if(i < A->nnz){
+        if(i < nnz){
                 unsigned int row = A->rowIdxs[i];
                 unsigned int col = A->colIdxs[i];
                 unsigned int val = A->values[i];
@@ -271,7 +270,7 @@ __global__ void convertFromCOOToCSR_kernel(COOMatrix *A, unsigned int* rowPtrs, 
         __syncthreads();
 
         //after filling swap columns and values
-        if(i < A->numRows){
+        if(i < numRows){
                 unsigned int rowPtrA = rowPtrs[i];
                 unsigned int nnzA = rowPtrs[i+1]-rowPtrs[i];
                 for(unsigned int j = rowPtrA; j<nnzA-1;++j){
@@ -529,7 +528,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
                         cudaMemset(&(tmpInBuffer.colIdxs[i]),uMax,sizeof(unsigned int));
                 }
                 
-                convertFromCOOToCSR_kernel <<< numBlocks, numThreadsPerBlock>>> (outBuffer_d, tmpInBuffer.rowPtrs, tmpInBuffer.colIdxs, tmpInBuffer.values);
+                convertFromCOOToCSR_kernel <<< numBlocks, numThreadsPerBlock>>> (outBuffer_d, tmpInBuffer.rowPtrs, tmpInBuffer.colIdxs, tmpInBuffer.values,*out_nnz_h,tmpInBuffer.numRows);
 
                 cudaDeviceSynchronize();
 
