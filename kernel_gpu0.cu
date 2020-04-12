@@ -249,7 +249,7 @@ void scan_gpu_d(unsigned int* input_d, unsigned int* output_d, unsigned int N) {
 
 }
 
-__global__ void convertFromCOOToCSR_kernel(COOMatrix *A, unsigned int* rowPtrs, unsigned int* colIdxs, float* values, unsigned int nnz, unsigned int numRows) {
+__global__ void convertFromCOOToCSR_kernel(unsigned int* incolIdxs, unsigned int* incolIdxs,float* invalues, unsigned int* rowPtrs, unsigned int* colIdxs, float* values, unsigned int nnz, unsigned int numRows) {
 
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 
@@ -260,9 +260,9 @@ __global__ void convertFromCOOToCSR_kernel(COOMatrix *A, unsigned int* rowPtrs, 
 	__syncthreads();
 
 	if (i < nnz) {
-		unsigned int row = A->rowIdxs[i];
-		unsigned int col = A->colIdxs[i];
-		unsigned int val = A->values[i];
+		unsigned int row = inrowIdxs[i];
+		unsigned int col = incolIdxs[i];
+		unsigned int val = invalues[i];
 
 		unsigned int rowPtrA = rowPtrs[row];
 		unsigned int nnzA = rowPtrs[row + 1] - rowPtrs[row];
@@ -559,7 +559,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 			cudaMemset(&(tmpInBuffer.colIdxs[i]), uMax, sizeof(unsigned int));
 		}*/
 
-		convertFromCOOToCSR_kernel << < numBlocks, numThreadsPerBlock >> > (outBuffer_d, tmpInBuffer.rowPtrs, tmpInBuffer.colIdxs, tmpInBuffer.values, *out_nnz_h, tmpInBuffer.numRows);
+		convertFromCOOToCSR_kernel << < numBlocks, numThreadsPerBlock >> > (out_rowIdxs_d,out_colIdxs_d,out_values_d, tmpInBuffer.rowPtrs, tmpInBuffer.colIdxs, tmpInBuffer.values, *out_nnz_h, tmpInBuffer.numRows);
 
 		cudaDeviceSynchronize();
 
