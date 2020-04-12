@@ -483,7 +483,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
                 unsigned int numThreadsPerBlock = 1024;
                 unsigned int numBlocks = ( *out_nnz_h + numThreadsPerBlock - 1)/numThreadsPerBlock;
 
-                histogram_private_kernel<<< numBlocks, numThreadsPerBlock >>>(out_rowIdxs_d, rowPtrstmp_d, *out_nnz_h, tmpInBuffer.numRows);
+                histogram_private_kernel<<< numBlocks, numThreadsPerBlock >>>(outBuffer_d->rowIdxs, rowPtrstmp_d, *out_nnz_h, tmpInBuffer.numRows);
 
                 cudaDeviceSynchronize();
 
