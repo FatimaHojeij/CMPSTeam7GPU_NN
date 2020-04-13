@@ -11,7 +11,7 @@
 #define YMAX 32
 #define threads 32
 #define BLOCK_DIM 1024
-#define CAPACITY 20000000
+#define CAPACITY 25498020
 
 //__constant__ unsigned int u_Max;
 
@@ -371,14 +371,14 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 	tmpInBuffer.numRows = inBuffer->numRows;
 	tmpInBuffer.numCols = inBuffer->numCols;
 	tmpInBuffer.nnz = inBuffer->nnz;
-	tmpInBuffer.capacity = CAPACITY;
+	tmpInBuffer.capacity = inBuffer->nnz;
 	cudaMalloc((void**)&tmpInBuffer.rowPtrs, (inBuffer->numRows + 1) * sizeof(unsigned int));
 	cudaMalloc((void**)&tmpInBuffer.colIdxs, inBuffer->capacity * sizeof(unsigned int));
 	cudaMalloc((void**)&tmpInBuffer.values, inBuffer->capacity * sizeof(float));
 
 	cudaMemcpy(tmpInBuffer.rowPtrs, inBuffer->rowPtrs, (inBuffer->numRows + 1) * sizeof(unsigned int), cudaMemcpyHostToDevice);
-	cudaMemcpy(tmpInBuffer.colIdxs, inBuffer->colIdxs, inBuffer->capacity * sizeof(unsigned int), cudaMemcpyHostToDevice);
-	cudaMemcpy(tmpInBuffer.values, inBuffer->values, inBuffer->capacity * sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(tmpInBuffer.colIdxs, inBuffer->colIdxs, (inBuffer->nnz) * sizeof(unsigned int), cudaMemcpyHostToDevice);
+	cudaMemcpy(tmpInBuffer.values, inBuffer->values, inBuffer->nnz * sizeof(float), cudaMemcpyHostToDevice);
 
 	//cudaMalloc(&inBuffer_d, sizeof(CSRMatrix));
 
@@ -480,13 +480,41 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		//cudaMemcpy(out_nnz_d, out_nnz_h, sizeof(unsigned int), cudaMemcpyHostToDevice);
 
 		//cudaMemcpy((outBuffer_d->nnz), *out_nnz_h,sizeof(unsigned int),cudaMemcpyHostToDevice);
+		//swaping
 
-		tmpInBuffer.nnz = *out_nnz_h;
+
 
 		unsigned int *rowPtrstmp, *rowPtrstmp_d;
 		rowPtrstmp = (unsigned int *)malloc((tmpInBuffer.numRows + 1) * sizeof(unsigned int));
 		cudaMalloc((void**)&rowPtrstmp_d, (tmpInBuffer.numRows + 1) * sizeof(unsigned int));
 		cudaMemcpy(rowPtrstmp_d, rowPtrstmp, (tmpInBuffer.numRows + 1) * sizeof(unsigned int), cudaMemcpyHostToDevice);
+
+		tmpInBuffer.nnz = *out_nnz_h;
+		tmpInBuffer.capacity = *out_nnz_h;
+		tmpInBuffer.numCols = W_d[layer].numCols;
+
+		cudaFree(tmpInBuffer.rowPtrs);
+		cudaFree(tmpInBuffer.colIdxs);
+		cudaFree(tmpInBuffer.values);
+
+		cudaMalloc((void**)&tmpInBuffer.rowPtrs, (inBuffer->numRows + 1) * sizeof(unsigned int));
+		cudaMalloc((void**)&tmpInBuffer.colIdxs, tmpInBuffer.capacity * sizeof(unsigned int));
+		cudaMalloc((void**)&tmpInBuffer.values, tmpInBuffer.capacity * sizeof(float));
+
+		inBuffer->numCols=tmpInBuffer.numCols;
+		inBuffer->numRows=tmpInBuffer.numRows;
+		inBuffer->nnz=tmpInBuffer.nnz;
+		inBuffer->capacity=tmpInBuffer.capacity;
+
+		inBuffer->rowPtrs = realloc(inBuffer->rowPtrs, (inBuffer->numRows + 1) * sizeof(unsigned int));
+		inBuffer->colIdxs = realloc(inBuffer->colIdxs, (tmpInBuffer.capacity) * sizeof(unsigned int));
+		inBuffer->values = realloc(inBuffer->values, (tmpInBuffer.capacity) * sizeof(float));
+
+		cudaMemcpy(tmpInBuffer.rowPtrs, inBuffer->rowPtrs, (inBuffer->numRows + 1) * sizeof(unsigned int), cudaMemcpyHostToDevice);
+		cudaMemcpy(tmpInBuffer.colIdxs, inBuffer->colIdxs, (tmpInBuffer.capacity) * sizeof(unsigned int), cudaMemcpyHostToDevice);
+		cudaMemcpy(tmpInBuffer.values, inBuffer->values, tmpInBuffer.capacity * sizeof(float), cudaMemcpyHostToDevice);
+
+
 
 		cudaDeviceSynchronize();
         stopTimeAndPrint(&timer, "");
