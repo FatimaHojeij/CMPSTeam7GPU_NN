@@ -347,7 +347,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 	startTime(&timer);
 	CSCMatrix* W[numLayers];
 	for (unsigned int layer = 0; layer < numLayers; ++layer) {
-		W[layer] = createCSCfromCOO(layerWeights[layer]);z
+		W[layer] = createCSCfromCOO(layerWeights[layer]);
 	}
 	stopTimeAndPrint(&timer, "Convert weights to CSC");
 
@@ -361,7 +361,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 
 	// Allocate GPU memory
-	startTime(&timer);r
+	startTime(&timer);
 	
 	outBuffer->capacity= CAPACITY;
 	inBuffer->capacity = CAPACITY;
