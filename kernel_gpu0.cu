@@ -469,7 +469,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		dim3 numThreadsPerBlock3(threads, threads);
 		dim3 numBlocks3((W_d[layer].numCols + numThreadsPerBlock3.x - 1) / numThreadsPerBlock3.x, (inBuffer->numRows + numThreadsPerBlock3.y - 1) / numThreadsPerBlock3.y);
-		cudaMemset(out_nnz_d, 0, sizeof(unsigned int));
+		cudaMemset(out_nnz_d, 0, sizeof(unsigned int))bre;
 
 
 		spmspm << <numBlocks3, numThreadsPerBlock3 >> > (outBuffer_d, tmpInBuffer, W_d[layer], bias, out_nnz_d);
@@ -583,6 +583,13 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		cudaDeviceSynchronize();
 
+
+		cudaMemcpy(outBuffer->colIdxs, tmpInBuffer.colIdxs,tmpInBuffer.capacity*sizeof(unsigned int),cudaMemcpyDeviceToHost );
+
+		cudaMemcpy(outBuffer->values, tmpInBuffer.values,tmpInBuffer.capacity*sizeof(float),cudaMemcpyDeviceToHost );
+
+		for(i=0;i<tmpInBuffer.capacity;++i)
+			printf(" ind: %d col : %u val:%f\n ",i,outBuffer->colIdxs[i],outBuffer->values[i]);
 		//empty the outbuffer
         printf("Converting time for layer %u",layer);
         stopTimeAndPrint(&timer, "");
