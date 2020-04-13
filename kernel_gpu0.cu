@@ -283,17 +283,20 @@ __global__ void convertFromCOOToCSR_kernel(unsigned int* inrowIdxs, unsigned int
 	if (i < numRows) {
 		unsigned int rowPtrA = rowPtrs[i];
 		unsigned int nnzA = rowPtrs[i + 1] - rowPtrs[i];
-		for (unsigned int j = rowPtrA; j < nnzA - 1;++j) {
-			for (unsigned int k = rowPtrA; k < nnzA - j - 1; ++k) {
-				if (colIdxs[k] > colIdxs[k + 1]) {
-					//swap col
-					unsigned int tmp = colIdxs[k];
-					colIdxs[k] = colIdxs[k + 1];
-					colIdxs[k + 1] = tmp;
-					//swap float
-					float valtmp = values[k];
-					values[k] = values[k + 1];
-					values[k + 1] = valtmp;
+		if(nnzA>0){
+			for (unsigned int j = rowPtrA; j < nnzA - 1;++j) {
+
+				for (unsigned int k = rowPtrA; k < nnzA - j - 1; ++k) {
+					if (colIdxs[k] > colIdxs[k + 1]) {
+						//swap col
+						unsigned int tmp = colIdxs[k];
+						colIdxs[k] = colIdxs[k + 1];
+						colIdxs[k + 1] = tmp;
+						//swap float
+						float valtmp = values[k];
+						values[k] = values[k + 1];
+						values[k + 1] = valtmp;
+					}
 				}
 			}
 		}
