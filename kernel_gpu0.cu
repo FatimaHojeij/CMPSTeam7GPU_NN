@@ -469,7 +469,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		dim3 numThreadsPerBlock3(threads, threads);
 		dim3 numBlocks3((W_d[layer].numCols + numThreadsPerBlock3.x - 1) / numThreadsPerBlock3.x, (inBuffer->numRows + numThreadsPerBlock3.y - 1) / numThreadsPerBlock3.y);
-		//cudaMemset(out_nnz_d, 0, sizeof(unsigned int));
+		cudaMemset(out_nnz_d, 0, sizeof(unsigned int));
 
 
 		spmspm << <numBlocks3, numThreadsPerBlock3 >> > (outBuffer_d, tmpInBuffer, W_d[layer], bias, out_nnz_d);
@@ -535,46 +535,36 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		
 		startTime(&timer);
 		
-		// //calling the scan kernel to scan kernel ptrs
-		// const unsigned int numElementsPerBlock = 2 * numThreadsPerBlock;
-		// numBlocks = ((tmpInBuffer.numRows + 1) + numElementsPerBlock - 1) / numElementsPerBlock;
+		//calling the scan kernel to scan kernel ptrs
+		const unsigned int numElementsPerBlock = 2 * numThreadsPerBlock;
+		numBlocks = ((tmpInBuffer.numRows + 1) + numElementsPerBlock - 1) / numElementsPerBlock;
 
-		// // Allocate partial sums
-		// unsigned int *partialSums_d;
-		// cudaMalloc((void**)&partialSums_d, numBlocks * sizeof(unsigned int));
-		// cudaDeviceSynchronize();
+		// Allocate partial sums
+		unsigned int *partialSums_d;
+		cudaMalloc((void**)&partialSums_d, numBlocks * sizeof(unsigned int));
+		cudaDeviceSynchronize();
 
-		// // Call kernel
-		// scan_kernel << < numBlocks, numThreadsPerBlock >> > (rowPtrstmp_d, tmpInBuffer.rowPtrs, partialSums_d, tmpInBuffer.numRows + 1);
+		// Call kernel
+		scan_kernel << < numBlocks, numThreadsPerBlock >> > (rowPtrstmp_d, tmpInBuffer.rowPtrs, partialSums_d, tmpInBuffer.numRows + 1);
 
-		// cudaDeviceSynchronize();
-		// // Scan partial sums then add
+		cudaDeviceSynchronize();
+		// Scan partial sums then add
 
-		// if (numBlocks > 1) {
+		if (numBlocks > 1) {
 
-		// 	// Scan partial sums
-		// 	scan_gpu_d(partialSums_d, partialSums_d, numBlocks);
+			// Scan partial sums
+			scan_gpu_d(partialSums_d, partialSums_d, numBlocks);
 
-		// 	// Add scanned sums
-		// 	add_kernel << < numBlocks, numThreadsPerBlock >> > (tmpInBuffer.rowPtrs, partialSums_d, tmpInBuffer.numRows + 1);
+			// Add scanned sums
+			add_kernel << < numBlocks, numThreadsPerBlock >> > (tmpInBuffer.rowPtrs, partialSums_d, tmpInBuffer.numRows + 1);
 
-		// }
-		cudaMemcpy(rowPtrstmp, tmpInBuffer.rowPtrs, sizeof(unsigned int) * (tmpInBuffer.numRows + 1), cudaMemcpyDeviceToHost);
-
-		unsigned int sum = 0;
-		for(unsigned int row = 0; row < tmpInBuffer.numRows; ++row) {
-			unsigned int val = rowPtrstmp[row];
-			rowPtrstmp[row] = sum;
-			sum += val;
 		}
-		rowPtrstmp[tmpInBuffer.numRows] = sum;
-
 
 		cudaDeviceSynchronize();
 
-		cudaMemcpy(tmpInBuffer.rowPtrs, rowPtrstmp, sizeof(unsigned int) * (tmpInBuffer.numRows + 1), cudaMemcpyHostToDevice);
+		cudaMemcpy(rowPtrstmp, tmpInBuffer.rowPtrs, sizeof(unsigned int) * (tmpInBuffer.numRows + 1), cudaMemcpyDeviceToHost);
 
-		//printf("test %u", rowPtrstmp[tmpInBuffer.numRows]);
+		printf("test %u", rowPtrstmp[tmpInBuffer.numRows]);
 
 
 		// Free memory
@@ -598,9 +588,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		cudaMemcpy(outBuffer->values, tmpInBuffer.values,tmpInBuffer.capacity*sizeof(float),cudaMemcpyDeviceToHost );
 
-		for(unsigned int i =0; i< tmpInBuffer.capacity;++i){
-			printf("i %u, col %u\n",outBuffer->colIdxs[i]);
-		}
+
 		//empty the outbuffer
         printf("Converting time for layer %u",layer);
         stopTimeAndPrint(&timer, "");
