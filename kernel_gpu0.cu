@@ -506,9 +506,9 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		inBuffer->nnz=tmpInBuffer.nnz;
 		inBuffer->capacity=tmpInBuffer.capacity;
 
-		inBuffer->rowPtrs = realloc(inBuffer->rowPtrs, (inBuffer->numRows + 1) * sizeof(unsigned int));
-		inBuffer->colIdxs = realloc(inBuffer->colIdxs, (tmpInBuffer.capacity) * sizeof(unsigned int));
-		inBuffer->values = realloc(inBuffer->values, (tmpInBuffer.capacity) * sizeof(float));
+		inBuffer->rowPtrs = (unsigned int *)realloc(inBuffer->rowPtrs, (inBuffer->numRows + 1) * sizeof(unsigned int));
+		inBuffer->colIdxs = (unsigned int *)realloc(inBuffer->colIdxs, (tmpInBuffer.capacity) * sizeof(unsigned int));
+		inBuffer->values = (unsigned int *)realloc(inBuffer->values, (tmpInBuffer.capacity) * sizeof(float));
 
 		cudaMemcpy(tmpInBuffer.rowPtrs, inBuffer->rowPtrs, (inBuffer->numRows + 1) * sizeof(unsigned int), cudaMemcpyHostToDevice);
 		cudaMemcpy(tmpInBuffer.colIdxs, inBuffer->colIdxs, (tmpInBuffer.capacity) * sizeof(unsigned int), cudaMemcpyHostToDevice);
