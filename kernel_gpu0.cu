@@ -262,7 +262,7 @@ __global__ void convertFromCOOToCSR_kernel(unsigned int* inrowIdxs, unsigned int
 	if (i < nnz) {
 		unsigned int row = inrowIdxs[i];
 		unsigned int col = incolIdxs[i];
-		unsigned int val = invalues[i];
+		float val = invalues[i];
 
 		unsigned int rowPtrA = rowPtrs[row];
 		unsigned int nnzA = rowPtrs[row + 1] - rowPtrs[row];
@@ -469,7 +469,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		dim3 numThreadsPerBlock3(threads, threads);
 		dim3 numBlocks3((W_d[layer].numCols + numThreadsPerBlock3.x - 1) / numThreadsPerBlock3.x, (inBuffer->numRows + numThreadsPerBlock3.y - 1) / numThreadsPerBlock3.y);
-		cudaMemset(out_nnz_d, 0, sizeof(unsigned int))bre;
+		cudaMemset(out_nnz_d, 0, sizeof(unsigned int));
 
 
 		spmspm << <numBlocks3, numThreadsPerBlock3 >> > (outBuffer_d, tmpInBuffer, W_d[layer], bias, out_nnz_d);
@@ -588,8 +588,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		cudaMemcpy(outBuffer->values, tmpInBuffer.values,tmpInBuffer.capacity*sizeof(float),cudaMemcpyDeviceToHost );
 
-		for(i=0;i<tmpInBuffer.capacity;++i)
-			printf(" ind: %d col : %u val:%f\n ",i,outBuffer->colIdxs[i],outBuffer->values[i]);
+
 		//empty the outbuffer
         printf("Converting time for layer %u",layer);
         stopTimeAndPrint(&timer, "");
