@@ -272,15 +272,12 @@ __global__ void convertFromCOOToCSR_kernel(unsigned int* inrowIdxs, unsigned int
 		unsigned int rowPtrA = rowPtrs[row];
 		unsigned int nnzA = rowPtrs[row + 1] - rowPtrs[row];
 
-		//printf("thread %u :::  rowPtra is %u, nnzA is: %u \n", i , rowPtrA,nnzA);
+		printf("thread %u :::  rowPtra is %u, nnzA is: %u \n", i , rowPtrA,nnzA);
 
 		//changed a few things here
-		if (rowPtrs[row + 1] < nnz) {
+
 
 			for (unsigned int j = rowPtrA; j < rowPtrA + nnzA; ++j) {
-
-				//if (i == 100)
-
 
 				if (atomicCAS(&colIdxs[j], UINT_MAX, col) == UINT_MAX) {
 					values[j] = val;
@@ -290,7 +287,7 @@ __global__ void convertFromCOOToCSR_kernel(unsigned int* inrowIdxs, unsigned int
 			/*colIdxs[i] = col;
 			values[i] = val;*/
 
-		}
+
 
 	}
 	__syncthreads();
@@ -607,11 +604,11 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		cudaMemcpy(outBuffer->values, tmpInBuffer.values, tmpInBuffer.capacity * sizeof(float), cudaMemcpyDeviceToHost);
 
 
-		/*for (int i = 0; i < tmpInBuffer.nnz ; i++)
+		for (int i = 0; i < tmpInBuffer.nnz ; i++)
 		{
 			if(outBuffer->colIdxs[i] == UINT_MAX)
 			printf("%u, col %u - val %f \n",i, outBuffer->colIdxs[i], outBuffer->values[i]);
-		}*/
+		}
 
 
 		cudaError_t error = cudaGetLastError();
