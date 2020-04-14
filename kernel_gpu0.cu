@@ -278,15 +278,7 @@ __global__ void convertFromCOOToCSR_kernel(unsigned int* inrowIdxs, unsigned int
 				values[j + rowPtrA] = val;
 				break;
 			}
-			if( i ==12000){
-				printf("wait");
-			}
 		}
-
-		if( i ==12000){
-			printf("wait");
-		}
-
 
 	}
 	__syncthreads();
@@ -464,9 +456,6 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 
 
-	//unsigned int uMax = (unsigned int)~0;
-	//cudaMemcpyToSymbol(&u_Max, &uMax, sizeof(unsigned int));
-
 	//kernel loop
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -604,15 +593,6 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		{
 			if(outBuffer->colIdxs[i] == UINT_MAX)
 			printf("%u, col %u - val %f \n",i, outBuffer->colIdxs[i], outBuffer->values[i]);
-		}
-
-
-		cudaError_t error = cudaGetLastError();
-		if (error != cudaSuccess)
-		{
-			// print the CUDA error message and exit
-			printf("CUDA error: %s\n", cudaGetErrorString(error));
-			exit(-1);
 		}
 
 
