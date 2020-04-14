@@ -274,9 +274,17 @@ __global__ void convertFromCOOToCSR_kernel(unsigned int* inrowIdxs, unsigned int
 
 		for (unsigned int j = 0; j < nnzA; ++j) {
 
-			if (atomicCAS(&colIdxs[j + rowPtrA], UINT_MAX, col) == UINT_MAX) {
+			if (atomicCAS(&colIdxs[j + rowPtrA], UINT_MAX, col) != UINT_MAX) {
+				continue;
+
+			}
+			else{
+				atomicCAS(&colIdxs[j + rowPtrA], UINT_MAX, col);
 				values[j + rowPtrA] = val;
 				break;
+			}
+			if( i ==12000){
+				printf("wait");
 			}
 		}
 
