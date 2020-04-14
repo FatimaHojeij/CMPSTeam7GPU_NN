@@ -280,6 +280,11 @@ __global__ void convertFromCOOToCSR_kernel(unsigned int* inrowIdxs, unsigned int
 			}
 		}
 
+		if( j == nnzA){
+			printf(" wait\n");
+		}
+
+
 	}
 	__syncthreads();
 
@@ -589,11 +594,11 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		cudaMemcpy(outBuffer->values, tmpInBuffer.values, tmpInBuffer.capacity * sizeof(float), cudaMemcpyDeviceToHost);
 
 
-		for (int i = 0; i < tmpInBuffer.nnz ; i++)
-		{
-			if(outBuffer->colIdxs[i] == UINT_MAX)
-			printf("%u, col %u - val %f \n",i, outBuffer->colIdxs[i], outBuffer->values[i]);
-		}
+		// for (int i = 0; i < tmpInBuffer.nnz ; i++)
+		// {
+		// 	if(outBuffer->colIdxs[i] == UINT_MAX)
+		// 	printf("%u, col %u - val %f \n",i, outBuffer->colIdxs[i], outBuffer->values[i]);
+		// }
 
 
 		//empty the outbuffer
