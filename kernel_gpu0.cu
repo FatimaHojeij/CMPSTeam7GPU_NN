@@ -588,25 +588,25 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		cudaDeviceSynchronize();
 
 
-		cudaMemcpy(outBuffer->colIdxs, tmpInBuffer.colIdxs, tmpInBuffer.nnz * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+		// cudaMemcpy(outBuffer->colIdxs, tmpInBuffer.colIdxs, tmpInBuffer.nnz * sizeof(unsigned int), cudaMemcpyDeviceToHost);
 
-		cudaMemcpy(outBuffer->values, tmpInBuffer.values, tmpInBuffer.nnz * sizeof(float), cudaMemcpyDeviceToHost);
-
-
-		for (int i = 0; i < tmpInBuffer.nnz ; i++)
-		{
-			if(outBuffer->colIdxs[i] == UINT_MAX)
-			printf("%u, col %u - val %f \n",i, outBuffer->colIdxs[i], outBuffer->values[i]);
-		}
+		// cudaMemcpy(outBuffer->values, tmpInBuffer.values, tmpInBuffer.nnz * sizeof(float), cudaMemcpyDeviceToHost);
 
 
-		cudaError_t error = cudaGetLastError();
-		if (error != cudaSuccess)
-		{
-			// print the CUDA error message and exit
-			printf("CUDA error: %s\n", cudaGetErrorString(error));
-			exit(-1);
-		}
+		// for (int i = 0; i < tmpInBuffer.nnz ; i++)
+		// {
+		// 	if(outBuffer->colIdxs[i] == UINT_MAX)
+		// 	printf("%u, col %u - val %f \n",i, outBuffer->colIdxs[i], outBuffer->values[i]);
+		// }
+
+
+		// cudaError_t error = cudaGetLastError();
+		// if (error != cudaSuccess)
+		// {
+		// 	// print the CUDA error message and exit
+		// 	printf("CUDA error: %s\n", cudaGetErrorString(error));
+		// 	exit(-1);
+		// }
 
 
 		//empty the outbuffer
