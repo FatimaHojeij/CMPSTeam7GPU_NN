@@ -588,9 +588,9 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		cudaDeviceSynchronize();
 
 
-		cudaMemcpy(outBuffer->colIdxs, tmpInBuffer.colIdxs, tmpInBuffer.capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+		cudaMemcpy(outBuffer->colIdxs, tmpInBuffer.colIdxs, tmpInBuffer.nnz * sizeof(unsigned int), cudaMemcpyDeviceToHost);
 
-		cudaMemcpy(outBuffer->values, tmpInBuffer.values, tmpInBuffer.capacity * sizeof(float), cudaMemcpyDeviceToHost);
+		cudaMemcpy(outBuffer->values, tmpInBuffer.values, tmpInBuffer.nnz * sizeof(float), cudaMemcpyDeviceToHost);
 
 
 		for (int i = 0; i < tmpInBuffer.nnz ; i++)
