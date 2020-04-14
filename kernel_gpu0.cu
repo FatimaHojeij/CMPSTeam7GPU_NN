@@ -272,7 +272,8 @@ __global__ void convertFromCOOToCSR_kernel(unsigned int* inrowIdxs, unsigned int
 		unsigned int rowPtrA = rowPtrs[row];
 		unsigned int nnzA = rowPtrs[row + 1] - rowPtrs[row];
 
-		for (unsigned int j = 0; j < nnzA; ++j) {
+		unsigned int j;
+		for (j = 0; j < nnzA; ++j) {
 
 			if (atomicCAS(&colIdxs[j + rowPtrA], UINT_MAX, col) == UINT_MAX) {
 				values[j + rowPtrA] = val;
