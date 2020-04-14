@@ -254,12 +254,12 @@ void scan_gpu_d(unsigned int* input_d, unsigned int* output_d, unsigned int N) {
 
 }
 
-__global__ void convertFromCOOToCSR_kernel(unsigned int* inrowIdxs, unsigned int* incolIdxs, float* invalues, unsigned int* rowPtrs, unsigned int* colIdxs, float* values, unsigned int nnz, unsigned int numRows,unsigned int numCols) {
+__global__ void convertFromCOOToCSR_kernel(unsigned int* inrowIdxs, unsigned int* incolIdxs, float* invalues, unsigned int* rowPtrs, unsigned int* colIdxs, float* values, unsigned int nnz, unsigned int numRows) {
 
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 
 	if (i < nnz) {
-		colIdxs[i] = numCols;
+		colIdxs[i] = UINT_MAX;
 	}
 
 	__syncthreads();
@@ -275,14 +275,10 @@ __global__ void convertFromCOOToCSR_kernel(unsigned int* inrowIdxs, unsigned int
 		unsigned int j;
 		for (j = 0; j < nnzA; ++j) {
 
-			if (atomicCAS(&colIdxs[j + rowPtrA], numCols, col) == numCols) {
+			if (atomicCAS(&colIdxs[j + rowPtrA], UINT_MAX, col) == UINT_MAX) {
 				values[j + rowPtrA] = val;
 				break;
 			}
-		}
-
-		if( j == nnzA){
-			printf(" wait\n");
 		}
 
 
@@ -585,7 +581,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		numBlocks = (*out_nnz_h + numThreadsPerBlock - 1) / numThreadsPerBlock;
 
-		convertFromCOOToCSR_kernel << < numBlocks, numThreadsPerBlock >> > (out_rowIdxs_d, out_colIdxs_d, out_values_d, tmpInBuffer.rowPtrs, tmpInBuffer.colIdxs, tmpInBuffer.values, *out_nnz_h, tmpInBuffer.numRows,tmpInBuffer.numCols+2);
+		convertFromCOOToCSR_kernel << < numBlocks, numThreadsPerBlock >> > (out_rowIdxs_d, out_colIdxs_d, out_values_d, tmpInBuffer.rowPtrs, tmpInBuffer.colIdxs, tmpInBuffer.values, *out_nnz_h, tmpInBuffer.numRows);
 
 		cudaDeviceSynchronize();
 
