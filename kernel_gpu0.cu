@@ -490,7 +490,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		startTime(&timer);
 		//calling histogram to fill rowPtrs of inBuffer
 
-		 numBlocks = (*out_nnz_h + numThreadsPerBlock - 1) / numThreadsPerBlock;
+		numBlocks = (*out_nnz_h + numThreadsPerBlock - 1) / numThreadsPerBlock;
 
 
 		// cudaMemcpy(outBuffer->rowIdxs, out_rowIdxs_d, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
@@ -570,7 +570,13 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		// cudaMemcpy(outBuffer->values, inBuffer_d.values, inBuffer_d.capacity * sizeof(float), cudaMemcpyDeviceToHost);
 
 		cudaDeviceSynchronize();
+		cudaMemcpy(outBuffer->colIdxs, inBuffer_d.colIdxs, inBuffer_d.capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
 
+		cudaMemcpy(outBuffer->values, inBuffer_d.values, inBuffer_d.capacity * sizeof(float), cudaMemcpyDeviceToHost);
+
+		for(unsigned int i =0; i<inBuffer_d.nnz;++i){
+			printf("i= %u col: %u, val : %f\n",i,outBuffer->colIdxs[i],outBuffer->values[i]);
+		}
 		//empty the outbuffer
 		printf("Converting time for layer %u", layer);
 		stopTimeAndPrint(&timer, "");
@@ -588,7 +594,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 
 
-
+		break;
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
