@@ -490,18 +490,18 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		startTime(&timer);
 		//calling histogram to fill rowPtrs of inBuffer
 
-		numBlocks = (*out_nnz_h + numThreadsPerBlock - 1) / numThreadsPerBlock;
+		unsigned int numBlocks = (*out_nnz_h + numThreadsPerBlock - 1) / numThreadsPerBlock;
 
 
 		// cudaMemcpy(outBuffer->rowIdxs, out_rowIdxs_d, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
 		// cudaMemcpy(out_rowIdxs_d, outBuffer->rowIdxs, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyHostToDevice);
 
 		for(unsigned int i=0; i<inBuffer_d.rowPtrs+1;++i){
-			cudaMemset(&rowPtrstmp_d[i],0,sizeof(unsigned int));
+			cudaMemset(&(rowPtrstmp_d[i]),0,sizeof(unsigned int));
 		}
 
 		cudaDeviceSynchronize();
-		
+
 		histogram_private_kernel << < numBlocks, numThreadsPerBlock >> > (out_rowIdxs_d, rowPtrstmp_d, *out_nnz_h, inBuffer_d.numRows);
 
 		cudaDeviceSynchronize();
@@ -557,7 +557,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		// intializing_kernel<<<numBlocks, numThreadsPerBlock>>>(rowPtrstmp_d, inBuffer_d.numRows+1,0);
 
 		for(unsigned int i=0; i<inBuffer_d.rowPtrs+1;++i){
-			cudaMemset(&rowPtrstmp_d[i],0,sizeof(unsigned int));
+			cudaMemset(&(rowPtrstmp_d[i]),0,sizeof(unsigned int));
 		}
 
 		cudaDeviceSynchronize();
