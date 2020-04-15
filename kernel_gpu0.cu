@@ -300,7 +300,7 @@ __global__ void Binning_kernel(unsigned int* inrowIdxs, unsigned int* incolIdxs,
 
 }
 
-__global__ sorting_kernel( unsigned int* colIdxs, float* values, unsigned int* rowPtrs,unsigned int nnz, unsigned int numRows){
+__global__ void  sorting_kernel( unsigned int* colIdxs, float* values, unsigned int numRows){
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 
 	if (i < numRows) {
