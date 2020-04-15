@@ -89,11 +89,11 @@ __global__ void histogram_private_kernel(unsigned int* rowIdxs, unsigned int* ro
 
 	unsigned int t = blockDim.x*blockIdx.x + threadIdx.x;
 
-	if (t < numRows + 1) {
-		rowPtrs[t] = 0;
-	}
+	// if (t < numRows + 1) {
+	// 	rowPtrs[t] = 0;
+	// }
 
-	__syncthreads();
+	// __syncthreads();
 	//fill bins_s
 	if (t < nnz) {
 		unsigned int rIdx = rowIdxs[t];
@@ -104,7 +104,12 @@ __global__ void histogram_private_kernel(unsigned int* rowIdxs, unsigned int* ro
 
 }
 
-
+__global__ void intializing_kernel(unsigned int* arr, unsigned int size, unsigned int val){
+	int i = threadIdx.x + blockDim.x*blockIdx.x;
+	if(i<size){
+		arr[i]=val;
+	}
+}
 __global__ void scan_kernel(unsigned int* input, unsigned int* output, unsigned int* partialSums, unsigned int N) {
 
 	// TODO
@@ -240,11 +245,11 @@ __global__ void Binning_kernel(unsigned int* inrowIdxs, unsigned int* incolIdxs,
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 
 
-	if (i < numRows + 1) {
-		rowPtrsBin[i] = 0;
-	}
+	// if (i < numRows + 1) {
+	// 	rowPtrsBin[i] = 0;
+	// }
 
-	__syncthreads();
+	// __syncthreads();
 
 	if (i < nnz) {
 		unsigned int row = inrowIdxs[i];
@@ -263,25 +268,25 @@ __global__ void  sorting_kernel( unsigned int* colIdxs, float* values,unsigned i
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 
 	if (i < numRows) {
-		unsigned int rowPtrA = rowPtrs[i];
-		unsigned int nnzA = rowPtrs[i + 1] - rowPtrs[i];
-		if (nnzA > 0) {
-			for (unsigned int j = rowPtrA; j < rowPtrA + nnzA - 1;++j) {
+		int rowPtrA =(int) rowPtrs[i];
+		int nnzA = (int)(rowPtrs[i + 1] - rowPtrs[i]);
+		
+		for (int j = rowPtrA; j < rowPtrA + nnzA - 1;++j) {
 
-				for (unsigned int k = rowPtrA; k < rowPtrA + nnzA - j - 1; ++k) {
-					if (colIdxs[k] > colIdxs[k + 1]) {
-						//swap col
-						unsigned int tmp = colIdxs[k];
-						colIdxs[k] = colIdxs[k + 1];
-						colIdxs[k + 1] = tmp;
-						//swap float
-						float valtmp = values[k];
-						values[k] = values[k + 1];
-						values[k + 1] = valtmp;
-					}
+			for (int k = rowPtrA; k < rowPtrA + nnzA - j - 1; ++k) {
+				if (colIdxs[k] > colIdxs[k + 1]) {
+					//swap col
+					unsigned int tmp = colIdxs[k];
+					colIdxs[k] = colIdxs[k + 1];
+					colIdxs[k + 1] = tmp;
+					//swap float
+					float valtmp = values[k];
+					values[k] = values[k + 1];
+					values[k + 1] = valtmp;
 				}
 			}
 		}
+		
 	}
 
 }
@@ -466,6 +471,10 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		cudaMalloc((void**)&rowPtrstmp_d, (inBuffer_d.numRows + 1) * sizeof(unsigned int));
 		cudaMemcpy(rowPtrstmp_d, rowPtrstmp, (inBuffer_d.numRows + 1) * sizeof(unsigned int), cudaMemcpyHostToDevice);
 
+		unsigned int numThreadsPerBlock = 1024;
+		numBlocks = ((inBuffer_d.numRows +1)+numThreadsPerBlock)/numThreadsPerBlock;
+
+		intializing_kernel<<<numBlocks, numThreadsPerBlock>>>(rowPtrstmp_d, inBuffer_d.numRows+1,0);
 
 		inBuffer_d.nnz = *out_nnz_h;
 		inBuffer_d.numCols = W_d[layer].numCols;
@@ -480,13 +489,14 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		startTime(&timer);
 		//calling histogram to fill rowPtrs of inBuffer
-		unsigned int numThreadsPerBlock = 1024;
+
 		unsigned int numBlocks = (*out_nnz_h + numThreadsPerBlock - 1) / numThreadsPerBlock;
 
 
 		// cudaMemcpy(outBuffer->rowIdxs, out_rowIdxs_d, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
 		// cudaMemcpy(out_rowIdxs_d, outBuffer->rowIdxs, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyHostToDevice);
-
+		const unsigned int init =0;
+		cudaMemset(rowPtrstmp_d,init,sizeof(unsigned int));
 		histogram_private_kernel << < numBlocks, numThreadsPerBlock >> > (out_rowIdxs_d, rowPtrstmp_d, *out_nnz_h, inBuffer_d.numRows);
 
 		cudaDeviceSynchronize();
@@ -537,7 +547,10 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		startTime(&timer);
 
 		//Binning
-		cudaMemcpy(rowPtrstmp_d, rowPtrstmp, (inBuffer_d.numRows + 1) * sizeof(unsigned int), cudaMemcpyHostToDevice);
+		numBlocks = ((inBuffer_d.numRows +1)+numThreadsPerBlock)/numThreadsPerBlock;
+
+		intializing_kernel<<<numBlocks, numThreadsPerBlock>>>(rowPtrstmp_d, inBuffer_d.numRows+1,0);
+
 		cudaDeviceSynchronize();
 		numBlocks = (*out_nnz_h + numThreadsPerBlock - 1) / numThreadsPerBlock;
 
