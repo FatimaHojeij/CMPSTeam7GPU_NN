@@ -475,6 +475,8 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		cudaDeviceSynchronize();
 
+		printf("kernel time for layer %u", layer);
+		stopTimeAndPrint(&timer, "");
 
 		startTime(&timer);
 		//calling histogram to fill rowPtrs of inBuffer
@@ -530,6 +532,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		cudaFree(partialSums_d);
 		cudaFree(rowPtrstmp_d);
+		free(rowPtrstmp);
 		printf("Scan time for layer %u", layer);
 		stopTimeAndPrint(&timer, "");
 		startTime(&timer);
@@ -544,7 +547,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 
 		//Sorting
-		numBlocks = ((inBuffer_d.nnz +1) + numThreadsPerBlock - 1) / numThreadsPerBlock;
+		numBlocks = ((inBuffer_d.numRows +1) + numThreadsPerBlock - 1) / numThreadsPerBlock;
 
 
 		sorting_kernel <<< numBlocks, numThreadsPerBlock >>>(inBuffer_d.colIdxs, inBuffer_d.values, inBuffer_d.rowPtrs, inBuffer_d.numRows);
