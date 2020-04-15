@@ -472,7 +472,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		cudaMemcpy(rowPtrstmp_d, rowPtrstmp, (inBuffer_d.numRows + 1) * sizeof(unsigned int), cudaMemcpyHostToDevice);
 
 		unsigned int numThreadsPerBlock = 1024;
-		numBlocks = ((inBuffer_d.numRows +1)+numThreadsPerBlock)/numThreadsPerBlock;
+		unsigned int numBlocks = ((inBuffer_d.numRows +1)+numThreadsPerBlock)/numThreadsPerBlock;
 
 		intializing_kernel<<<numBlocks, numThreadsPerBlock>>>(rowPtrstmp_d, inBuffer_d.numRows+1,0);
 
@@ -490,7 +490,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		startTime(&timer);
 		//calling histogram to fill rowPtrs of inBuffer
 
-		unsigned int numBlocks = (*out_nnz_h + numThreadsPerBlock - 1) / numThreadsPerBlock;
+		 numBlocks = (*out_nnz_h + numThreadsPerBlock - 1) / numThreadsPerBlock;
 
 
 		// cudaMemcpy(outBuffer->rowIdxs, out_rowIdxs_d, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyDeviceToHost);
