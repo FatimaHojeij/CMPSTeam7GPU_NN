@@ -278,14 +278,9 @@ __global__ void convertFromCOOToCSR_kernel(unsigned int* inrowIdxs, unsigned int
 				values[j + rowPtrA] = val;
 				break;
 			}
-			if( i ==12000){
-				printf("wait");
-			}
+
 		}
 
-		if( i ==12000){
-			printf("wait");
-		}
 
 
 	}
