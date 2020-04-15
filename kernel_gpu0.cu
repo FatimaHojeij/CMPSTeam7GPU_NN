@@ -240,11 +240,11 @@ __global__ void Binning_kernel(unsigned int* inrowIdxs, unsigned int* incolIdxs,
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 
 
-	if (i < numRows + 1) {
-		rowPtrsBin[i] = 0;
-	}
+	// if (i < numRows + 1) {
+	// 	rowPtrsBin[i] = 0;
+	// }
 
-	__syncthreads();
+	// __syncthreads();
 
 	if (i < nnz) {
 		unsigned int row = inrowIdxs[i];
@@ -464,6 +464,10 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		unsigned int *rowPtrstmp, *rowPtrstmp_d;
 		rowPtrstmp = (unsigned int *)malloc((inBuffer_d.numRows + 1) * sizeof(unsigned int));
 		cudaMalloc((void**)&rowPtrstmp_d, (inBuffer_d.numRows + 1) * sizeof(unsigned int));
+		for(unsigned int i = 0; i<inBuffer_d.numRows + 1;++i){
+			rowPtrstmp[i]=0;
+		}
+		cudaDeviceSynchronize();
 		cudaMemcpy(rowPtrstmp_d, rowPtrstmp, (inBuffer_d.numRows + 1) * sizeof(unsigned int), cudaMemcpyHostToDevice);
 
 
@@ -531,21 +535,22 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		// Free memory
 
 		cudaFree(partialSums_d);
-		cudaFree(rowPtrstmp_d);
-		free(rowPtrstmp);
+
 		printf("Scan time for layer %u", layer);
 		stopTimeAndPrint(&timer, "");
 		startTime(&timer);
 
 		//Binning
-
+		cudaMemcpy(rowPtrstmp_d, rowPtrstmp, (inBuffer_d.numRows + 1) * sizeof(unsigned int), cudaMemcpyHostToDevice);
+		cudaDeviceSynchronize();
 		numBlocks = (*out_nnz_h + numThreadsPerBlock - 1) / numThreadsPerBlock;
 
 		Binning_kernel << < numBlocks, numThreadsPerBlock >> > (out_rowIdxs_d, out_colIdxs_d, out_values_d, inBuffer_d.rowPtrs, inBuffer_d.colIdxs, inBuffer_d.values, *out_nnz_h, inBuffer_d.numRows,rowPtrstmp_d);
 
 		cudaDeviceSynchronize();
 
-
+		cudaFree(rowPtrstmp_d);
+		free(rowPtrstmp);
 		//Sorting
 		numBlocks = ((inBuffer_d.numRows +1) + numThreadsPerBlock - 1) / numThreadsPerBlock;
 
