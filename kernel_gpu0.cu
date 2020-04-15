@@ -272,13 +272,19 @@ __global__ void convertFromCOOToCSR_kernel(unsigned int* inrowIdxs, unsigned int
 		unsigned int rowPtrA = rowPtrs[row];
 		unsigned int nnzA = rowPtrs[row + 1] - rowPtrs[row];
 
-		unsigned int j;
-		for (j = rowPtrA; j < nnzA + rowPtrA; ++j) {
+		for (unsigned int j = 0; j < nnzA; ++j) {
 
-			if (atomicCAS(&colIdxs[j], UINT_MAX, col) == UINT_MAX) {
+			if (atomicCAS(&colIdxs[j + rowPtrA], UINT_MAX, col) == UINT_MAX) {
 				values[j + rowPtrA] = val;
 				break;
 			}
+			if( i ==12000){
+				printf("wait");
+			}
+		}
+
+		if( i ==12000){
+			printf("wait");
 		}
 
 
@@ -458,6 +464,9 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 
 
+	//unsigned int uMax = (unsigned int)~0;
+	//cudaMemcpyToSymbol(&u_Max, &uMax, sizeof(unsigned int));
+
 	//kernel loop
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -595,6 +604,15 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		// {
 		// 	if(outBuffer->colIdxs[i] == UINT_MAX)
 		// 	printf("%u, col %u - val %f \n",i, outBuffer->colIdxs[i], outBuffer->values[i]);
+		// }
+
+
+		// cudaError_t error = cudaGetLastError();
+		// if (error != cudaSuccess)
+		// {
+		// 	// print the CUDA error message and exit
+		// 	printf("CUDA error: %s\n", cudaGetErrorString(error));
+		// 	exit(-1);
 		// }
 
 
