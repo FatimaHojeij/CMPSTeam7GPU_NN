@@ -87,20 +87,8 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
 __global__ void histogram_private_kernel(unsigned int* rowIdxs, unsigned int* rowPtrs, unsigned int nnz, unsigned int numRows) {
 
 
-	//extern __shared__ unsigned int array[];
-
-	//unsigned int *bins_s = numRows * sizeof(unsigned int *) + array;
-	//char *bins_s = arr1_sz * sizeof(double) + array;
-
-
-
-
-	//unsigned int tid = threadIdx.x;
-	//unsigned int* bins_s = (unsigned int*)array;
 	unsigned int t = blockDim.x*blockIdx.x + threadIdx.x;
 
-
-	//intialize shared memoru
 	if (t < numRows + 1) {
 		rowPtrs[t] = 0;
 	}
@@ -112,14 +100,7 @@ __global__ void histogram_private_kernel(unsigned int* rowIdxs, unsigned int* ro
 		atomicAdd(&rowPtrs[rIdx], 1);
 	}
 
-	//__syncthreads();
 
-	////commit to global bins
-	//if (tid < numRows + 1) {
-
-	//	atomicAdd(&rowPtrs[tid], bins_s[tid]);
-
-	//}
 
 }
 
@@ -260,7 +241,7 @@ __global__ void Binning_kernel(unsigned int* inrowIdxs, unsigned int* incolIdxs,
 
 
 	if (i < numRows + 1) {
-		rowPtrsBin[t] = 0;
+		rowPtrsBin[i] = 0;
 	}
 
 	__syncthreads();
@@ -270,37 +251,15 @@ __global__ void Binning_kernel(unsigned int* inrowIdxs, unsigned int* incolIdxs,
 		unsigned int col = incolIdxs[i];
 		float val = invalues[i];
 
-		unsigned int nnzIdx = atomicAdd(&rowPtrsBin[i], 1);
+		unsigned int nnzIdx = atomicAdd(&rowPtrsBin[row], 1);
 		colIdxs[nnzIdx] = col;
 		values[nnzIdx]=val;
 	}
 
-	//after filling swap columns and values
-	// if (i < numRows) {
-	// 	unsigned int rowPtrA = rowPtrs[i];
-	// 	unsigned int nnzA = rowPtrs[i + 1] - rowPtrs[i];
-	// 	if (nnzA > 0) {
-	// 		for (unsigned int j = rowPtrA; j < rowPtrA + nnzA - 1;++j) {
-
-	// 			for (unsigned int k = rowPtrA; k < rowPtrA + nnzA - j - 1; ++k) {
-	// 				if (colIdxs[k] > colIdxs[k + 1]) {
-	// 					//swap col
-	// 					unsigned int tmp = colIdxs[k];
-	// 					colIdxs[k] = colIdxs[k + 1];
-	// 					colIdxs[k + 1] = tmp;
-	// 					//swap float
-	// 					float valtmp = values[k];
-	// 					values[k] = values[k + 1];
-	// 					values[k + 1] = valtmp;
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
 
 }
 
-__global__ void  sorting_kernel( unsigned int* colIdxs, float* values, unsigned int numRows){
+__global__ void  sorting_kernel( unsigned int* colIdxs, float* values,unsigned int* rowPtrs, unsigned int numRows){
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 
 	if (i < numRows) {
