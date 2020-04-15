@@ -467,7 +467,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// Loop over layers
-	for (unsigned int layer = 0; layer < 2; ++layer) {
+	for (unsigned int layer = 0; layer < numLayers; ++layer) {
 
 
 
@@ -637,7 +637,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		printf("emptying  outbuffer time for layer %u", layer);
 		stopTimeAndPrint(&timer, "");
 
-
+		break;
 
 	}
 
