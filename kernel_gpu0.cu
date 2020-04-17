@@ -599,13 +599,13 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		FILE* f = fopen("./out_gpu_sorting.txt","w");
 		//cudaMemcpy(inBuffer->rowPtrs, inBuffer_d.rowPtrs, (inBuffer_d.numRows + 1) * sizeof(unsigned int), cudaMemcpyDeviceToHost);
-		cudaMemcpy(inBuffer->colIdxs, inBuffer_d.colIdxs, inBuffer_d.nnz * sizeof(unsigned int), cudaMemcpyDeviceToHost);
-		cudaMemcpy(inBuffer->values, inBuffer_d.values, inBuffer_d.nnz * sizeof(float), cudaMemcpyDeviceToHost);
+		cudaMemcpy(outBuffer->colIdxs, inBuffer_d.colIdxs, inBuffer_d.nnz * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+		cudaMemcpy(outBuffer->values, inBuffer_d.values, inBuffer_d.nnz * sizeof(float), cudaMemcpyDeviceToHost);
 
 		//printf("Layer %d \n",layer)
 		for(int i=0; i<inBuffer_d.nnz;++i){
 			
-			fprintf(f,"col %u  val %f\n",inBuffer->colIdxs[i],inBuffer->values[i]);
+			fprintf(f,"col %u  val %f\n",outBuffer->colIdxs[i],outBuffer->values[i]);
 
 		}
 		fclose(f);
