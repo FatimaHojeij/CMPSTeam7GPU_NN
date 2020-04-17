@@ -492,6 +492,9 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		spmspm << <numBlocks3, numThreadsPerBlock3 >> > (outBuffer_d, inBuffer_d, W_d[layer], bias, out_nnz_d);
 
 		cudaDeviceSynchronize();
+
+
+
 		stopTimeAndPrint(&timer, "");
 
 		cudaMemcpy(out_nnz_h, out_nnz_d, sizeof(unsigned int), cudaMemcpyDeviceToHost);
@@ -560,9 +563,20 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		   
 		cudaMemcpy(rowPtrstmp, inBuffer_d.rowPtrs, sizeof(unsigned int) * (inBuffer_d.numRows + 1), cudaMemcpyDeviceToHost);
 
-		printf("test %u\n", rowPtrstmp[inBuffer_d.numRows]);
+		//printf("test %u\n", rowPtrstmp[inBuffer_d.numRows]);
+		FILE* f = fopen(".\\out_gpu_scan.txt","w");
+		// cudaMemcpy(inBuffer->rowPtrs, inBuffer_d.rowPtrs, (inBuffer_d.numRows + 1) * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+		// cudaMemcpy(inBuffer->colIdxs, inBuffer_d.colIdxs, inBuffer_d.nnz * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+		// cudaMemcpy(inBuffer->values, inBuffer_d.values, inBuffer_d.nnz * sizeof(float), cudaMemcpyDeviceToHost);
 
+		//printf("Layer %d \n",layer)
+		for(int i=0; i<inBuffer_d.numRows+1;++i){
 
+			fprintf(f,"row %u  val %d\n",i,rowPtrstmp[i]);
+
+		}
+		fclose(f);
+		break;
 		// Free memory
 
 		cudaFree(partialSums_d);
@@ -618,7 +632,6 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 	   	}
 
 		cudaDeviceSynchronize();
-
 
 		
 	}
