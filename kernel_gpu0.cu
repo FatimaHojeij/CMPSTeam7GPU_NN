@@ -254,8 +254,8 @@ __global__ void Binning_kernel(unsigned int* inrowIdxs, unsigned int* incolIdxs,
 		float val = invalues[i];
 		unsigned int init = rowPtrs[row];
 		unsigned int nnzIdx = atomicAdd(&rowPtrsBin[row], 1);
-		colIdxs[nnzIdx+init] = col;
-		values[nnzIdx+init]=val;
+		colIdxs[nnzIdx+row] = col;
+		values[nnzIdx+row]=val;
 	}
 
 
