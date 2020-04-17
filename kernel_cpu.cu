@@ -140,7 +140,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		}
         fclose(f);
-        break
+        break;
         outBuffer = t;
 
     }
