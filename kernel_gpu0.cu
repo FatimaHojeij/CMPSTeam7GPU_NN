@@ -470,7 +470,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 
 		dim3 numThreadsPerBlock3(threads, threads);
-		dim3 numBlocks3((W_d[layer].numCols + numThreadsPerBlock3.x - 1) / numThreadsPerBlock3.x, (inBuffer->numRows + numThreadsPerBlock3.y - 1) / numThreadsPerBlock3.y);
+		dim3 numBlocks3((W_d[layer].numCols + numThreadsPerBlock3.x - 1) / numThreadsPerBlock3.x, (inBuffer_d.numRows + numThreadsPerBlock3.y - 1) / numThreadsPerBlock3.y);
 
 		spmspm << <numBlocks3, numThreadsPerBlock3 >> > (outBuffer_d, inBuffer_d, W_d[layer], bias, out_nnz_d);
 
@@ -481,13 +481,10 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		printf("nnz %d\n", *out_nnz_h);
 
 
-
-
-
 		inBuffer_d.nnz = *out_nnz_h;
 		inBuffer_d.numCols = W_d[layer].numCols;
 		inBuffer->numCols = inBuffer_d.numCols;
-		//inBuffer->numRows = inBuffer_d.numRows;
+		inBuffer->numRows = inBuffer_d.numRows;
 		inBuffer->nnz = inBuffer_d.nnz;
 
 		cudaDeviceSynchronize();
