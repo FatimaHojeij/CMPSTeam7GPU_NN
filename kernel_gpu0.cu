@@ -461,7 +461,24 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		// Loop over layers
 	for (unsigned int layer = 0; layer < numLayers; ++layer) {
 
+		cudaMemcpy(out_nnz_h, out_nnz_d, sizeof(unsigned int), cudaMemcpyDeviceToHost);
+		printf(" before nnz %d\n", *out_nnz_h);
+		if(layer!=0){
+			cudaMemcpy(inBuffer->rowPtrs, inBuffer_d.rowPtrs, (inBuffer_d.numRows + 1) * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+			cudaMemcpy(inBuffer->colIdxs, inBuffer_d.colIdxs, inBuffer_d.nnz * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+			cudaMemcpy(inBuffer->values, inBuffer_d.values, inBuffer_d.nnz * sizeof(float), cudaMemcpyDeviceToHost);
 
+			printf("Layer %d \n",layer)
+			for(int i=0; i<inBuffer_d.numRows+1;++i){
+
+				unsigned int rowPtr = inBuffer->row[i];
+				unsigned int nnzr = inBuffer->row[i+1]-inBuffer->row[i+1];
+
+				for(unsigned int j =rowPtr;j<rowPtr+nnzr;++j){
+					printf("row %u , col %u, val %f\n",i,inBuffer->colIdxs[j],inBuffer->values[j])
+				}
+			}
+		}	
 
 		// SpMSpM
 		printf("Computing layer %u (SpMSpM)", layer);
