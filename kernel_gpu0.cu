@@ -541,7 +541,11 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		}
 
 		cudaDeviceSynchronize();
-
+				
+		for(unsigned int i=0; i<inBuffer_d.numRows+1;i++){
+			rowPtrstmp[i]=0;
+		s}
+		   
 		cudaMemcpy(rowPtrstmp, inBuffer_d.rowPtrs, sizeof(unsigned int) * (inBuffer_d.numRows + 1), cudaMemcpyDeviceToHost);
 
 		printf("test %u", rowPtrstmp[inBuffer_d.numRows]);
@@ -592,10 +596,15 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		cudaMemcpy(&(outBuffer_d->values), &out_values_d, sizeof(float*), cudaMemcpyHostToDevice);
 		//cudaMemcpy(&(outBuffer_d->numRows), &(outBuffer->numRows), sizeof(unsigned int), cudaMemcpyHostToDevice);
 
+
+		for(unsigned int i=0; i<inBuffer_d.numRows+1;i++){
+			rowPtrstmp[i]=0;
+	   	}
+
 		cudaDeviceSynchronize();
 
 
-
+		
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
