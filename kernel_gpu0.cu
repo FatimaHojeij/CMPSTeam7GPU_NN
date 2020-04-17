@@ -89,12 +89,6 @@ __global__ void histogram_private_kernel(unsigned int* rowIdxs, unsigned int* ro
 
 	unsigned int t = blockDim.x*blockIdx.x + threadIdx.x;
 
-	// if (t < numRows + 1) {
-	// 	rowPtrs[t] = 0;
-	// }
-
-	// __syncthreads();
-	//fill bins_s
 	if (t < nnz) {
 		unsigned int rIdx = rowIdxs[t];
 		atomicAdd(&rowPtrs[rIdx], 1);
@@ -263,12 +257,12 @@ __global__ void  sorting_kernel( unsigned int* colIdxs, float* values,unsigned i
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 
 	if (i < numRows) {
-		unsigned int rowPtrA = rowPtrs[i];
-		unsigned int nnzA = rowPtrs[i + 1] - rowPtrs[i];
-		if (nnzA > 0) {
-			for (unsigned int j = rowPtrA; j < rowPtrA + nnzA - 1;++j) {
+		int rowPtrA = (int)rowPtrs[i];
+		int nnzA = (int)(rowPtrs[i + 1] - rowPtrs[i]);
+		
+			for (int j = rowPtrA; j < rowPtrA + nnzA - 1;++j) {
 
-				for (unsigned int k = rowPtrA; k < rowPtrA + nnzA - j - 1; ++k) {
+				for (int k = rowPtrA; k < rowPtrA + nnzA - j - 1; ++k) {
 					if (colIdxs[k] > colIdxs[k + 1]) {
 						//swap col
 						unsigned int tmp = colIdxs[k];
@@ -281,10 +275,11 @@ __global__ void  sorting_kernel( unsigned int* colIdxs, float* values,unsigned i
 					}
 				}
 			}
-		}
+		
 	}
 
 }
+
 //converts from CSRMatrix to Vector and a vector of indices where the row is not all zeros
 void findNonzeroRows(Vector* v, CSRMatrix* A) {
 	unsigned int nnz = 0;
@@ -318,6 +313,7 @@ COOMatrix* createEmptyCOO(unsigned int numRows, unsigned int numCols, unsigned i
 	}
 	return coo;
 }
+
 void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeights, float bias, unsigned int numLayers) {
 	//const unsigned int _numLayers = 120;
 
