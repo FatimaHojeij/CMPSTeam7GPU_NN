@@ -444,14 +444,14 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 	unsigned int *rowPtrstmp;
 	rowPtrstmp = (unsigned int *)malloc((inBuffer_d.numRows + 1) * sizeof(unsigned int));
 
-	memset(rowPtrstmp, 0, sizeof (unsigned int) * (inBuffer_d.numRows + 1));
+	//memset(rowPtrstmp, 0, sizeof (unsigned int) * (inBuffer_d.numRows + 1));
 
 
 	cudaMalloc((void**)&rowPtrstmp_d, (inBuffer_d.numRows + 1) * sizeof(unsigned int));
 
-	// for(unsigned int i=0; i<inBuffer_d.numRows+1;i++){
-	//  	rowPtrstmp[i]=0;
-	// }
+	for(unsigned int i=0; i<inBuffer_d.numRows+1;i++){
+	 	rowPtrstmp[i]=0;
+	}
 
 	cudaMemcpy(rowPtrstmp_d, rowPtrstmp, (inBuffer_d.numRows + 1) * sizeof(unsigned int), cudaMemcpyHostToDevice);
 
