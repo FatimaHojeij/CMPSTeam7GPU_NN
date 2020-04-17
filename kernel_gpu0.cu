@@ -235,6 +235,8 @@ void scan_gpu_d(unsigned int* input_d, unsigned int* output_d, unsigned int N) {
 
 }
 
+
+
 __global__ void Binning_kernel(unsigned int* inrowIdxs, unsigned int* incolIdxs, float* invalues, unsigned int* rowPtrs, unsigned int* colIdxs, float* values, unsigned int nnz, unsigned int numRows, unsigned int* rowPtrsBin) {
 
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
@@ -250,10 +252,10 @@ __global__ void Binning_kernel(unsigned int* inrowIdxs, unsigned int* incolIdxs,
 		unsigned int row = inrowIdxs[i];
 		unsigned int col = incolIdxs[i];
 		float val = invalues[i];
-
+		unsigned int init = rowPtrs[row];
 		unsigned int nnzIdx = atomicAdd(&rowPtrsBin[row], 1);
-		colIdxs[nnzIdx] = col;
-		values[nnzIdx]=val;
+		colIdxs[nnzIdx+init] = col;
+		values[nnzIdx+init]=val;
 	}
 
 
@@ -579,17 +581,18 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		printf("Converting time for layer %u", layer);
 		stopTimeAndPrint(&timer, "");
 
-		// cudaMemcpy(outBuffer_d, outBuffer, sizeof(COOMatrix), cudaMemcpyHostToDevice);
-		// cudaMemcpy(out_rowIdxs_d, outBuffer->rowIdxs, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyHostToDevice);
-		// cudaMemcpy(out_colIdxs_d, outBuffer->colIdxs, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyHostToDevice);
-		// cudaMemcpy(out_values_d, outBuffer->values, outBuffer->capacity * sizeof(float), cudaMemcpyHostToDevice);
+		cudaMemcpy(outBuffer_d, outBuffer, sizeof(COOMatrix), cudaMemcpyHostToDevice);
+		cudaMemcpy(out_rowIdxs_d, outBuffer->rowIdxs, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyHostToDevice);
+		cudaMemcpy(out_colIdxs_d, outBuffer->colIdxs, outBuffer->capacity * sizeof(unsigned int), cudaMemcpyHostToDevice);
+		cudaMemcpy(out_values_d, outBuffer->values, outBuffer->capacity * sizeof(float), cudaMemcpyHostToDevice);
 		*out_nnz_h =0;
 		cudaMemcpy(out_nnz_d, out_nnz_h, sizeof(unsigned int), cudaMemcpyHostToDevice);
-		// cudaMemcpy(&(outBuffer_d->rowIdxs), &out_rowIdxs_d, sizeof(unsigned int*), cudaMemcpyHostToDevice);
-		// cudaMemcpy(&(outBuffer_d->colIdxs), &out_colIdxs_d, sizeof(unsigned int*), cudaMemcpyHostToDevice);
-		// cudaMemcpy(&(outBuffer_d->values), &out_values_d, sizeof(float*), cudaMemcpyHostToDevice);
-		// cudaMemcpy(&(outBuffer_d->numRows), &(outBuffer->numRows), sizeof(unsigned int), cudaMemcpyHostToDevice);
+		cudaMemcpy(&(outBuffer_d->rowIdxs), &out_rowIdxs_d, sizeof(unsigned int*), cudaMemcpyHostToDevice);
+		cudaMemcpy(&(outBuffer_d->colIdxs), &out_colIdxs_d, sizeof(unsigned int*), cudaMemcpyHostToDevice);
+		cudaMemcpy(&(outBuffer_d->values), &out_values_d, sizeof(float*), cudaMemcpyHostToDevice);
+		//cudaMemcpy(&(outBuffer_d->numRows), &(outBuffer->numRows), sizeof(unsigned int), cudaMemcpyHostToDevice);
 
+		cudaDeviceSynchronize();
 
 
 
