@@ -11,7 +11,7 @@
 #include "matrix.h"
 #include "timer.h"
 
-
+#include<string.h>
 #define THRESHOLD 0.000001
 #define YMAX 32
 #define threads 32
@@ -437,7 +437,11 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 	unsigned int  *rowPtrstmp_d;
 	//rowPtrstmp = (unsigned int *)malloc((inBuffer_d.numRows + 1) * sizeof(unsigned int));
-	int rowPtrstmp[inBuffer_d.numRows + 1] = { 0 };
+	unsigned int *rowPtrstmp;
+	rowPtrstmp = (unsigned int *)malloc((inBuffer_d.numRows + 1) * sizeof(unsigned int));
+
+	memset(rowPtrstmp, 0, sizeof (unsigned int) * (inBuffer_d.numRows + 1));
+
 
 	cudaMalloc((void**)&rowPtrstmp_d, (inBuffer_d.numRows + 1) * sizeof(unsigned int));
 
