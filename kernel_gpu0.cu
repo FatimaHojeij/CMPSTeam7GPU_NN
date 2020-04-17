@@ -564,7 +564,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		cudaMemcpy(rowPtrstmp, inBuffer_d.rowPtrs, sizeof(unsigned int) * (inBuffer_d.numRows + 1), cudaMemcpyDeviceToHost);
 
 		//printf("test %u\n", rowPtrstmp[inBuffer_d.numRows]);
-		FILE* f = fopen(".\\out_gpu_scan.txt","w");
+		FILE* f = fopen("./out_gpu_scan.txt","w");
 		// cudaMemcpy(inBuffer->rowPtrs, inBuffer_d.rowPtrs, (inBuffer_d.numRows + 1) * sizeof(unsigned int), cudaMemcpyDeviceToHost);
 		// cudaMemcpy(inBuffer->colIdxs, inBuffer_d.colIdxs, inBuffer_d.nnz * sizeof(unsigned int), cudaMemcpyDeviceToHost);
 		// cudaMemcpy(inBuffer->values, inBuffer_d.values, inBuffer_d.nnz * sizeof(float), cudaMemcpyDeviceToHost);
@@ -642,8 +642,9 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 	// Copy data from GPU
 	startTime(&timer);
+	return;
 
-	// TODO
+	//TODO
 	inBuffer->numRows = inBuffer_d.numRows;
 	inBuffer->numCols = inBuffer_d.numCols;
 	inBuffer->nnz = inBuffer_d.nnz;
