@@ -140,11 +140,11 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		}
         fclose(f);
-        break
+        break;
         outBuffer = t;
 
     }
-
+	return;
     // Find nonzero rows
     startTime(&timer);
     findNonzeroRows(result, inBuffer);
