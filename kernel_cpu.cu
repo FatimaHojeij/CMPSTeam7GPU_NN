@@ -134,7 +134,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		// cudaMemcpy(inBuffer->values, inBuffer_d.values, inBuffer_d.nnz * sizeof(float), cudaMemcpyDeviceToHost);
 
 		//printf("Layer %d \n",layer)
-		for(int i=0; i<inBuffer_d.numRows+1;++i){
+		for(int i=0; i<inBuffer->numRows+1;++i){
 
 			fprintf(f,"row %u  val %d\n",i,outBuffer->rowPtrs[i]);
 
