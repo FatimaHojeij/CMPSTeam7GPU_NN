@@ -22,19 +22,19 @@
 //__constant__ unsigned int u_Max;
 
 __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, unsigned int* nnz_out) {
-	// unsigned int r = blockIdx.y*blockDim.y + threadIdx.y;
-	 unsigned int c = blockIdx.x*blockDim.x + threadIdx.x;
+	 unsigned int r = blockIdx.y*blockDim.y + threadIdx.y;
+	//unsigned int c = blockIdx.x*blockDim.x + threadIdx.x;
 
-    //unsigned int segmentx = COARSE_FACTOR*blockDim.x*blockIdx.x;
-    unsigned int segmenty = COARSE_FACTOR*blockDim.y*blockIdx.y;
+    unsigned int segmentx = COARSE_FACTOR*blockDim.x*blockIdx.x;
+    //unsigned int segmenty = COARSE_FACTOR*blockDim.y*blockIdx.y;
 
-    unsigned int row = segmenty + threadIdx.y;
-	//unsigned int col =segmentx + threadIdx.x;
+    //unsigned int row = segmenty + threadIdx.y;
+	unsigned int col =segmentx + threadIdx.x;
 
-    for(unsigned int cr= 0 ; cr<COARSE_FACTOR;++cr){
-        unsigned int r = row + cr*threads;
-        // for(unsigned int cc =0; cc <COARSE_FACTOR;++cc){
-        //     unsigned int c = col + cc*threads;
+    // for(unsigned int cr= 0 ; cr<COARSE_FACTOR;++cr){
+    //     unsigned int r = row + cr*threads;
+    for(unsigned int cc =0; cc <COARSE_FACTOR;++cc){
+        unsigned int c = col + cc*threads;
 
         if (r < A.numRows && c < B.numCols) {
             unsigned int rowPtrA = A.rowPtrs[r];
@@ -447,7 +447,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 
 		dim3 numThreadsPerBlock3(threads, threads);
-		dim3 numBlocks3((W_d[layer].numCols + numThreadsPerBlock3.x - 1) / (numThreadsPerBlock3.x), (inBuffer_d.numRows + numThreadsPerBlock3.y*COARSE_FACTOR - 1) /( numThreadsPerBlock3.y*COARSE_FACTOR));
+		dim3 numBlocks3((W_d[layer].numCols + numThreadsPerBlock3.x*COARSE_FACTOR  - 1) / (numThreadsPerBlock3.x*COARSE_FACTOR), (inBuffer_d.numRows + numThreadsPerBlock3.y - 1) /( numThreadsPerBlock3.y));
 
 		spmspm << <numBlocks3, numThreadsPerBlock3 >> > (outBuffer_d, inBuffer_d, W_d[layer], bias, out_nnz_d);
 
