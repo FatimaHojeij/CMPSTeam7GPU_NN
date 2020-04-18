@@ -569,15 +569,15 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 	// Copy data from GPU
 	startTime(&timer);
-	return;
+
 
 	//TODO
-	outBuffer->numRows = inBuffer_d.numRows;
-	outBuffer->numCols = inBuffer_d.numCols;
-	outBuffer->nnz = inBuffer_d.nnz;
-	cudaMemcpy(outBuffer->rowPtrs, inBuffer_d.rowPtrs, (inBuffer_d.numRows + 1) * sizeof(unsigned int), cudaMemcpyDeviceToHost);
-	cudaMemcpy(outBuffer->colIdxs, inBuffer_d.colIdxs, inBuffer_d.nnz * sizeof(unsigned int), cudaMemcpyDeviceToHost);
-	cudaMemcpy(outBuffer->values, inBuffer_d.values, inBuffer_d.nnz * sizeof(float), cudaMemcpyDeviceToHost);
+	inBuffer->numRows = inBuffer_d.numRows;
+	inBuffer->numCols = inBuffer_d.numCols;
+	inBuffer->nnz = inBuffer_d.nnz;
+	cudaMemcpy(inBuffer->rowPtrs, inBuffer_d.rowPtrs, (inBuffer_d.numRows + 1) * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+	cudaMemcpy(inBuffer->colIdxs, inBuffer_d.colIdxs, inBuffer_d.nnz * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+	cudaMemcpy(inBuffer->values, inBuffer_d.values, inBuffer_d.nnz * sizeof(float), cudaMemcpyDeviceToHost);
 
 
 	cudaDeviceSynchronize();
@@ -588,7 +588,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 	// Find 
 	//nonzero rows
 	startTime(&timer);
-	findNonzeroRows(result, outBuffer);
+	findNonzeroRows(result, inBuffer);
 	stopTimeAndPrint(&timer, "Find nonzero rows");
 
 	// Free GPU memory
