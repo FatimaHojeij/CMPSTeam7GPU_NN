@@ -464,7 +464,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		printf("kernel time for layer %u", layer);
 		stopTimeAndPrint(&timer, "");
-
+		break;
 		startTime(&timer);
 
 		//calling histogram to fill rowPtrs of inBuffer
