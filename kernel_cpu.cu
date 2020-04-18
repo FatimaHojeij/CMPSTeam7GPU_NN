@@ -127,24 +127,10 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
         // Swap buffers
         CSRMatrix *t = inBuffer;
         inBuffer = outBuffer;
-
-        FILE* f = fopen("./out_cpu_bin.txt","w");
-		// cudaMemcpy(inBuffer->rowPtrs, inBuffer_d.rowPtrs, (inBuffer_d.numRows + 1) * sizeof(unsigned int), cudaMemcpyDeviceToHost);
-		// cudaMemcpy(inBuffer->colIdxs, inBuffer_d.colIdxs, inBuffer_d.nnz * sizeof(unsigned int), cudaMemcpyDeviceToHost);
-		// cudaMemcpy(inBuffer->values, inBuffer_d.values, inBuffer_d.nnz * sizeof(float), cudaMemcpyDeviceToHost);
-
-		//printf("Layer %d \n",layer)
-		for(int i=0; i<inBuffer->nnz;++i){
-			
-			fprintf(f,"col %u  val %f\n",inBuffer->colIdxs[i],inBuffer->values[i]);
-
-		}
-        fclose(f);
-        break;
         outBuffer = t;
 
     }
-	return;
+
     // Find nonzero rows
     startTime(&timer);
     findNonzeroRows(result, inBuffer);
