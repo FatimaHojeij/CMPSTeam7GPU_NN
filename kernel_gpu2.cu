@@ -31,10 +31,11 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
     unsigned int row = segmenty + threadIdx.y;
 	unsigned int col =segmentx + threadIdx.x;
 
-    for(unsigned int cs= 0 ; cs<COARSE_FACTOR;++cs){
-        unsigned int r = row + cs*threads;
-        unsigned int c = col + cs*threads;
-        
+    for(unsigned int cr= 0 ; cr<COARSE_FACTOR;++cr){
+        unsigned int r = row + cr*threads;
+        for(unsigned int cc =0; cc <COARSE_FACTOR;++cc){
+            unsigned int c = col + cc*threads;
+
         if (r < A.numRows && c < B.numCols) {
             unsigned int rowPtrA = A.rowPtrs[r];
             unsigned int nnzA = A.rowPtrs[r + 1] - rowPtrA;
@@ -81,6 +82,7 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
             }
         }
     }
+}
 
 }
 
@@ -464,7 +466,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		printf("kernel time for layer %u", layer);
 		stopTimeAndPrint(&timer, "");
-		break;
+
 		startTime(&timer);
 
 		//calling histogram to fill rowPtrs of inBuffer
