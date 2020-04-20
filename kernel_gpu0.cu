@@ -243,12 +243,12 @@ __global__ void  sorting_kernel( unsigned int* colIdxs, float* values,unsigned i
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 
 	if (i < numRows) {
-		unsigned int rowPtrA = rowPtrs[i];
-		unsigned int nnzA = (rowPtrs[i + 1] - rowPtrs[i]);
+		int rowPtrA = int(rowPtrs[i]);
+		int nnzA = int(rowPtrs[i + 1] - rowPtrs[i]);
 		if(nnzA>0)
-			for (unsigned int j = rowPtrA; j < rowPtrA + nnzA - 1;++j) {
+			for (int j = rowPtrA; j < rowPtrA + nnzA - 1;++j) {
 
-				for (unsigned int k = rowPtrA; k < rowPtrA + nnzA - j - 1; ++k) {
+				for (int k = rowPtrA; k < rowPtrA + nnzA - j - 1; ++k) {
 					if (colIdxs[k] > colIdxs[k + 1]) {
 						//swap col
 						unsigned int tmp = colIdxs[k];
