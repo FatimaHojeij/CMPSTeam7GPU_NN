@@ -32,15 +32,7 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
 		unsigned int colPtrB = B.colPtrs[c];
 		unsigned int nnzB = B.colPtrs[c + 1] - colPtrB;
 		if (nnzA > 0 && nnzB > 0) { // if a row is not all zeros , we do computation otherwise we skip row
-				//ptrs to cols and vals of A[r]
-				//unsigned int* colIdxsA = A.colIdxs + rowPtrA;
-				//float* valueA = A.values + rowPtrA;
-				//we will take one column of B
 
-				 // if a col in B is not all zeros, we do computation otherwise skip//ptrs to rows and vals of B[c]
-						//unsigned int* rowIdxsB = B.rowIdxs[colPtrB];
-						//float* valueB = B.values[colPtrB];
-						// Loop and find intersection
 			float sum = 0.0f;
 			unsigned int ia = 0, ib = 0;
 			while (ia < nnzA && ib < nnzB) { // loops over all non zeros from A and B and stop when there is no more non zero
@@ -458,7 +450,6 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		inBuffer_d.nnz = *out_nnz_h;
 		inBuffer_d.numCols = W_d[layer].numCols;
 
-		cudaDeviceSynchronize();
 
 		printf("kernel time for layer %u", layer);
 		stopTimeAndPrint(&timer, "");
