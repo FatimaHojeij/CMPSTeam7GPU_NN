@@ -245,7 +245,7 @@ __global__ void  sorting_kernel( unsigned int* colIdxs, float* values,unsigned i
 	if (i < numRows) {
 		int rowPtrA = int(rowPtrs[i]);
 		int nnzA = int(rowPtrs[i + 1] - rowPtrs[i]);
-		if(nnzA>0)
+
 			for (int j = rowPtrA; j < rowPtrA + nnzA - 1;++j) {
 
 				for (int k = rowPtrA; k < rowPtrA + nnzA - j - 1; ++k) {
@@ -262,7 +262,8 @@ __global__ void  sorting_kernel( unsigned int* colIdxs, float* values,unsigned i
 				}
 			}
 		
-	}
+	}	
+
 
 }
 
