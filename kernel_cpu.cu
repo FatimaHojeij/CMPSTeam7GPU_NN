@@ -127,7 +127,30 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
         // Swap buffers
         CSRMatrix *t = inBuffer;
         inBuffer = outBuffer;
+
+        FILE* f = fopen("./binning_cpu.txt","w");
+
+		for(int i =0; i<inBuffer->numRows;++i){
+
+			fprintf(f,"%d\t%d:\n",i,inBuffer->rowPtrs[i]);
+			int rowPtr = inBuffer->rowPtrs[i];
+			int nnz = inBuffer->rowPtrs[i+1]-inBuffer->rowPtrs[i];
+
+			for(int j = rowPtr;j<rowPtr+nnz;++j){
+
+				fprintf(f,"%d\n",inBuffer->colIdxs[j]);
+			}
+
+		}
+
+		fclose(f);
+
+		return;
+
+
         outBuffer = t;
+
+
 
     }
 
