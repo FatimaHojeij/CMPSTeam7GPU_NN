@@ -451,6 +451,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		inBuffer_d.nnz = *out_nnz_h;
 		inBuffer_d.numCols = W_d[layer].numCols;
+		inBuffer_d.numRows = inBuffer->numRows;
 
 
 		printf("kernel time for layer %u", layer);
@@ -533,7 +534,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 	
 		cudaMemcpy(rowPtrstmp, inBuffer_d.rowPtrs, sizeof(unsigned int) * (inBuffer_d.numRows + 1), cudaMemcpyDeviceToHost);
-		cudaMemcpy(outBuffer->colIdxs, inBuffer_d.colIdxs,inBuffer_d.nnz* sizeof(unsigned int), cudaMemcpyHostToDevice);
+		cudaMemcpy(outBuffer->colIdxs, inBuffer_d.colIdxs,inBuffer_d.nnz* sizeof(unsigned int), cudaMemcpyDeviceToHost);
 
 		//cudaMemcpy(inBuffer->colIdxs,inBuffer_d.colIdxs,inBuffer_d.nnz*sizeof(unsigned int),cudaMemcpyDeviceToHost);
 
@@ -543,9 +544,9 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		FILE* f = fopen("./binning_gpu.txt","w");
 
-		for(int i =0; i<inBuffer_d.numRows;++i){
+		for(int i =0; i<inBuffer->numRows;++i){
 
-			fprintf(f,"%d\t%d:\n",i,rowPtrstmp[i]);
+			fprintf(f,"%d :\n",i);
 			int rowPtr = rowPtrstmp[i];
 			int nnz = rowPtrstmp[i+1]-rowPtrstmp[i];
 
