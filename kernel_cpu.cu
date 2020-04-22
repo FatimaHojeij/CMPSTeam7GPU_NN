@@ -132,7 +132,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		for(int i =0; i<inBuffer->numRows;++i){
 
-			fprintf(f,"%d\t%d:\n",i,inBuffer->rowPtrs[i]);
+			fprintf(f,"%d :\n",i);
 			int rowPtr = inBuffer->rowPtrs[i];
 			int nnz = inBuffer->rowPtrs[i+1]-inBuffer->rowPtrs[i];
 
