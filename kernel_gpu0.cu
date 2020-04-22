@@ -532,9 +532,10 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 
 	
-		cudaMemcpy(inBuffer->rowPtrs,inBuffer_d.rowPtrs,(inBuffer_d.numRows+1)*sizeof(unsigned int),cudaMemcpyDeviceToHost);
+		cudaMemcpy(rowPtrstmp, inBuffer_d.rowPtrs, sizeof(unsigned int) * (inBuffer_d.numRows + 1), cudaMemcpyDeviceToHost);
+		cudaMemcpy(outBuffer->colIdxs, inBuffer_d.colIdxs,inBuffer_d.nnz* sizeof(unsigned int), cudaMemcpyHostToDevice);
 
-		cudaMemcpy(inBuffer->colIdxs,inBuffer_d.colIdxs,inBuffer_d.nnz*sizeof(unsigned int),cudaMemcpyDeviceToHost);
+		//cudaMemcpy(inBuffer->colIdxs,inBuffer_d.colIdxs,inBuffer_d.nnz*sizeof(unsigned int),cudaMemcpyDeviceToHost);
 
 		cudaDeviceSynchronize();
 
@@ -544,13 +545,13 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		for(int i =0; i<inBuffer_d.numRows;++i){
 
-			fprintf(f,"%d\t%d:\n",i,inBuffer->rowPtrs[i]);
-			int rowPtr = inBuffer->rowPtrs[i];
-			int nnz = inBuffer->rowPtrs[i+1]-inBuffer->rowPtrs[i];
+			fprintf(f,"%d\t%d:\n",i,rowPtrstmp[i]);
+			int rowPtr = rowPtrstmp[i];
+			int nnz = rowPtrstmp[i+1]-rowPtrstmp[i];
 
 			for(int j = rowPtr;j<rowPtr+nnz;++j){
 
-				fprintf(f,"%d\n",inBuffer->colIdxs[j]);
+				fprintf(f,"%d\n",outBuffer->colIdxs[j]);
 			}
 
 		}
