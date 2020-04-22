@@ -398,7 +398,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 	// allocating W_d
 
-	CSCMatrix W_d[numlayers];
+	CSCMatrix W_d[numLayers];
 	for (unsigned int layer = 0; layer < numLayers; ++layer) {
 		W_d[layer].numRows = W[layer]->numRows;
 		W_d[layer].numCols = W[layer]->numCols;
