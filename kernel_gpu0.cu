@@ -532,14 +532,14 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 
 	
-		cudaMemcpy(inBuffer->rowPtrs,inBuffer_d.rowPtrs,(inBuffer_d.numRows+1)*size(unsigned int),cudaMemcpyDeviceToHost);
+		cudaMemcpy(inBuffer->rowPtrs,inBuffer_d.rowPtrs,(inBuffer_d.numRows+1)*sizeof(unsigned int),cudaMemcpyDeviceToHost);
 
-		cudaMemcpy(inBuffer->colIdxs,inBuffer_d.colIdxs,inBuffer_d.nnz*size(unsigned int),cudaMemcpyDeviceToHost);
+		cudaMemcpy(inBuffer->colIdxs,inBuffer_d.colIdxs,inBuffer_d.nnz*sizeof(unsigned int),cudaMemcpyDeviceToHost);
 
 		cudaDeviceSynchronize();
 
 
-		
+
 		FILE* f = fopen("./binning_gpu.txt","w");
 
 		for(int i =0; i<inBuffer_d.numRows;++i){
