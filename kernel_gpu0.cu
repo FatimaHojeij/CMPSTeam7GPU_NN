@@ -1,7 +1,3 @@
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-#include <stdlib.h>
-
 
 // row+1; swapping; nnzidx; syncthreads
 #include <stdio.h>
@@ -318,7 +314,7 @@ COOMatrix* createEmptyCOO(unsigned int numRows, unsigned int numCols, unsigned i
 void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeights, float bias, unsigned int numLayers) {
 
 
-	const int _numlayers = 120;
+	
 	Timer timer;
 
 	// Convert featureVectors to CSR
@@ -328,7 +324,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 	// Convert layer weights to CSC
 	startTime(&timer);
-	CSCMatrix* W[_numlayers];
+	CSCMatrix* W[numlayers];
 
 	for (unsigned int layer = 0; layer < numLayers; ++layer) {
 		W[layer] = createCSCfromCOO(layerWeights[layer]);
@@ -402,7 +398,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 	// allocating W_d
 
-	CSCMatrix W_d[_numlayers];
+	CSCMatrix W_d[numlayers];
 	for (unsigned int layer = 0; layer < numLayers; ++layer) {
 		W_d[layer].numRows = W[layer]->numRows;
 		W_d[layer].numCols = W[layer]->numCols;
