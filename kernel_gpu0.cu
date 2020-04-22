@@ -264,7 +264,7 @@ __global__ void  sorting_kernel( unsigned int* colIdxs, float* values,unsigned i
 			}
 		}
 	}	
-
+__syncthreads();
 
 }
 
@@ -451,7 +451,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		inBuffer_d.nnz = *out_nnz_h;
 		inBuffer_d.numCols = W_d[layer].numCols;
-		inBuffer_d.numRows = inBuffer->numRows;
+
 
 
 		printf("kernel time for layer %u", layer);
@@ -533,33 +533,33 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 
 	
-		cudaMemcpy(rowPtrstmp, inBuffer_d.rowPtrs, sizeof(unsigned int) * (inBuffer_d.numRows + 1), cudaMemcpyDeviceToHost);
-		cudaMemcpy(outBuffer->colIdxs, inBuffer_d.colIdxs,inBuffer_d.nnz* sizeof(unsigned int), cudaMemcpyDeviceToHost);
+		// cudaMemcpy(rowPtrstmp, inBuffer_d.rowPtrs, sizeof(unsigned int) * (inBuffer_d.numRows + 1), cudaMemcpyDeviceToHost);
+		// cudaMemcpy(outBuffer->colIdxs, inBuffer_d.colIdxs,inBuffer_d.nnz* sizeof(unsigned int), cudaMemcpyDeviceToHost);
 
-		//cudaMemcpy(inBuffer->colIdxs,inBuffer_d.colIdxs,inBuffer_d.nnz*sizeof(unsigned int),cudaMemcpyDeviceToHost);
+		// //cudaMemcpy(inBuffer->colIdxs,inBuffer_d.colIdxs,inBuffer_d.nnz*sizeof(unsigned int),cudaMemcpyDeviceToHost);
 
-		cudaDeviceSynchronize();
+		// cudaDeviceSynchronize();
 
 
 
-		FILE* f = fopen("./binning_gpu.txt","w");
+		// FILE* f = fopen("./binning_gpu.txt","w");
 
-		for(int i =0; i<inBuffer->numRows;++i){
+		// for(int i =0; i<inBuffer->numRows;++i){
 
-			fprintf(f,"%d :\n",i);
-			int rowPtr = rowPtrstmp[i];
-			int nnz = rowPtrstmp[i+1]-rowPtrstmp[i];
+		// 	fprintf(f,"%d :\n",i);
+		// 	int rowPtr = rowPtrstmp[i];
+		// 	int nnz = rowPtrstmp[i+1]-rowPtrstmp[i];
 
-			for(int j = rowPtr;j<rowPtr+nnz;++j){
+		// 	for(int j = rowPtr;j<rowPtr+nnz;++j){
 
-				fprintf(f,"%d\n",outBuffer->colIdxs[j]);
-			}
+		// 		fprintf(f,"%d\n",outBuffer->colIdxs[j]);
+		// 	}
 
-		}
+		// }
 
-		fclose(f);
+		// fclose(f);
 
-		return;
+		// return;
 
 
 		//Sorting
