@@ -324,7 +324,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 	// Convert layer weights to CSC
 	startTime(&timer);
-	CSCMatrix* W[numlayers];
+	CSCMatrix* W[numLayers];
 
 	for (unsigned int layer = 0; layer < numLayers; ++layer) {
 		W[layer] = createCSCfromCOO(layerWeights[layer]);
