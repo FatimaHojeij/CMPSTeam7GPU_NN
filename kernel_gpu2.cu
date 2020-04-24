@@ -255,7 +255,6 @@ __global__ void  sorting_kernel(unsigned int* colIdxs, float* values, unsigned i
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 
 	if (i < numRows) {
-		unsigned int rowPtrA = rowPtrs[i];
 		unsigned int nnzA = rowPtrs[i + 1] - rowPtrs[i];
 
 		if (nnzA > 0) {
@@ -471,23 +470,6 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		cudaDeviceSynchronize();
 
 		printf("kernel time for layer %u", layer);
-		stopTimeAndPrint(&timer, "");
-
-		startTime(&timer);
-
-		//calling histogram to fill rowPtrs of inBuffer
-		unsigned int numThreadsPerBlock = 1024;
-		unsigned int numBlocks = (*out_nnz_h + numThreadsPerBlock - 1) / numThreadsPerBlock;
-
-		//initializing rowstmp and rowstmp_d
-		if(layer!=0)
-			cudaMemcpy(rowPtrstmp_d, rowPtrstmp, (inBuffer_d.numRows + 1) * sizeof(unsigned int), cudaMemcpyHostToDevice);
-		
-		histogram_private_kernel << < numBlocks, numThreadsPerBlock >> > (out_rowIdxs_d, rowPtrstmp_d, *out_nnz_h, inBuffer_d.numRows);
-
-		cudaDeviceSynchronize();
-
-		printf("Histogram time for layer %u", layer);
 		stopTimeAndPrint(&timer, "");
 
 		startTime(&timer);
