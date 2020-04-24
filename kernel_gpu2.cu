@@ -251,33 +251,39 @@ __global__ void Binning_kernel(unsigned int* inrowIdxs, unsigned int* incolIdxs,
 
 }
 
-__global__ void  sorting_kernel( unsigned int* colIdxs, float* values,unsigned int* rowPtrs, unsigned int numRows){
+__global__ void  sorting_kernel(unsigned int* colIdxs, float* values, unsigned int* rowPtrs, unsigned int numRows) {
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 
 	if (i < numRows) {
 		unsigned int rowPtrA = rowPtrs[i];
-		unsigned int nnzA = (rowPtrs[i + 1] - rowPtrs[i]);
-		if(nnzA>0)
-			for (unsigned int j = rowPtrA; j < rowPtrA + nnzA - 1;++j) {
+		unsigned int nnzA = rowPtrs[i + 1] - rowPtrs[i];
 
-				for (unsigned int k = rowPtrA; k < rowPtrA + nnzA - j - 1; ++k) {
-					if (colIdxs[k] > colIdxs[k + 1]) {
+		if (nnzA > 0) {
+			for (unsigned int j = 0; j < nnzA - 1;++j) {
+
+				for (unsigned int k = 0; k < nnzA - j - 1; ++k) {
+
+					unsigned int l_0 = k + rowPtrs[i];
+					unsigned int l_1 = l_0 + 1;
+
+					if (colIdxs[l_0] > colIdxs[l_1]) {
 						//swap col
-						unsigned int tmp = colIdxs[k];
-						colIdxs[k] = colIdxs[k + 1];
-						colIdxs[k + 1] = tmp;
+						unsigned int tmp = colIdxs[l_0];
+						colIdxs[l_0] = colIdxs[l_1];
+						colIdxs[l_1] = tmp;
 						//swap float
-						float valtmp = values[k];
-						values[k] = values[k + 1];
-						values[k + 1] = valtmp;
+						float valtmp = values[l_0];
+						values[l_0] = values[l_1];
+						values[l_1] = valtmp;
 					}
 				}
 			}
-		
+		}
+
+
 	}
 
 }
-
 //converts from CSRMatrix to Vector and a vector of indices where the row is not all zeros
 void findNonzeroRows(Vector* v, CSRMatrix* A) {
 	unsigned int nnz = 0;
@@ -486,6 +492,23 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		startTime(&timer);
 
+		//calling histogram to fill rowPtrs of inBuffer
+		unsigned int numThreadsPerBlock = 1024;
+		unsigned int numBlocks = (*out_nnz_h + numThreadsPerBlock - 1) / numThreadsPerBlock;
+
+		//initializing rowstmp and rowstmp_d
+		if (layer != 0)
+			cudaMemcpy(rowPtrstmp_d, rowPtrstmp, (inBuffer_d.numRows + 1) * sizeof(unsigned int), cudaMemcpyHostToDevice);
+
+		histogram_private_kernel << < numBlocks, numThreadsPerBlock >> > (out_rowIdxs_d, rowPtrstmp_d, *out_nnz_h, inBuffer_d.numRows);
+
+		cudaDeviceSynchronize();
+
+		printf("Histogram time for layer %u", layer);
+		stopTimeAndPrint(&timer, "");
+
+		startTime(&timer);
+
 		//calling the scan kernel to scan kernel ptrs
 		const unsigned int numElementsPerBlock = 2 * numThreadsPerBlock;
 		numBlocks = ((inBuffer_d.numRows + 1) + numElementsPerBlock - 1) / numElementsPerBlock;
@@ -512,7 +535,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		}
 
 		cudaDeviceSynchronize();
-				
+
 
 		//used to check if scan and histogram same as nnz of kernel
 		cudaMemcpy(rowPtrstmp, inBuffer_d.rowPtrs, sizeof(unsigned int) * (inBuffer_d.numRows + 1), cudaMemcpyDeviceToHost);
@@ -528,8 +551,8 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		startTime(&timer);
 
 		//Binning
-		for(unsigned int i=0; i<inBuffer_d.numRows+1;i++){
-			rowPtrstmp[i]=0;
+		for (unsigned int i = 0; i < inBuffer_d.numRows + 1;i++) {
+			rowPtrstmp[i] = 0;
 		}
 
 		cudaMemcpy(rowPtrstmp_d, rowPtrstmp, (inBuffer_d.numRows + 1) * sizeof(unsigned int), cudaMemcpyHostToDevice);
@@ -537,38 +560,39 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 
 		numBlocks = (*out_nnz_h + numThreadsPerBlock - 1) / numThreadsPerBlock;
-		Binning_kernel << < numBlocks, numThreadsPerBlock >> > (out_rowIdxs_d, out_colIdxs_d, out_values_d, inBuffer_d.rowPtrs, inBuffer_d.colIdxs, inBuffer_d.values, *out_nnz_h, inBuffer_d.numRows,rowPtrstmp_d);
+		Binning_kernel << < numBlocks, numThreadsPerBlock >> > (out_rowIdxs_d, out_colIdxs_d, out_values_d, inBuffer_d.rowPtrs, inBuffer_d.colIdxs, inBuffer_d.values, *out_nnz_h, inBuffer_d.numRows, rowPtrstmp_d);
 
 		cudaDeviceSynchronize();
 
 
 		//Sorting
-		numBlocks = ((inBuffer_d.numRows +1) + numThreadsPerBlock - 1) / numThreadsPerBlock;
-		sorting_kernel <<< numBlocks, numThreadsPerBlock >>>(inBuffer_d.colIdxs, inBuffer_d.values, inBuffer_d.rowPtrs, inBuffer_d.numRows);
+		numBlocks = ((inBuffer_d.numRows + 1) + numThreadsPerBlock - 1) / numThreadsPerBlock;
+		sorting_kernel << < numBlocks, numThreadsPerBlock >> > (inBuffer_d.colIdxs, inBuffer_d.values, inBuffer_d.rowPtrs, inBuffer_d.numRows);
 
 		cudaDeviceSynchronize();
+
+
 
 
 		printf("Converting time for layer %u", layer);
 		stopTimeAndPrint(&timer, "");
 
 		//reinitializing nnz and rowstmp
-		*out_nnz_h =0;
+		*out_nnz_h = 0;
 		cudaMemcpy(out_nnz_d, out_nnz_h, sizeof(unsigned int), cudaMemcpyHostToDevice);
 
 
 
-		for(unsigned int i=0; i<inBuffer_d.numRows+1;i++){
-			rowPtrstmp[i]=0;
-	   	}
+		for (unsigned int i = 0; i < inBuffer_d.numRows + 1;i++) {
+			rowPtrstmp[i] = 0;
+		}
 
 		cudaDeviceSynchronize();
-
-		
+			
 	}
 
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 	// Copy data from GPU
