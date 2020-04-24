@@ -238,7 +238,7 @@ __global__ void  sorting_kernel(unsigned int* colIdxs, float* values, unsigned i
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 
 	if (i < numRows) {
-		unsigned int rowPtrA = rowPtrs[i];
+
 		unsigned int nnzA = rowPtrs[i + 1] - rowPtrs[i];
 
 		if (nnzA > 0) {
@@ -263,17 +263,8 @@ __global__ void  sorting_kernel(unsigned int* colIdxs, float* values, unsigned i
 			}
 		}
 
-		/*if (i == 0) {
-			for (unsigned m = 0; m < nnzA; m++)
-			{
-				unsigned int l_0 = m + rowPtrs[i];
-				printf("col: %u \n", colIdxs[l_0]);
-			}
-
-		}*/
 
 	}
-	__syncthreads();
 
 }
 
@@ -540,36 +531,6 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		Binning_kernel << < numBlocks, numThreadsPerBlock >> > (out_rowIdxs_d, out_colIdxs_d, out_values_d, inBuffer_d.rowPtrs, inBuffer_d.colIdxs, inBuffer_d.values, *out_nnz_h, inBuffer_d.numRows, rowPtrstmp_d);
 
 		cudaDeviceSynchronize();
-
-
-
-		// cudaMemcpy(rowPtrstmp, inBuffer_d.rowPtrs, sizeof(unsigned int) * (inBuffer_d.numRows + 1), cudaMemcpyDeviceToHost);
-		// cudaMemcpy(outBuffer->colIdxs, inBuffer_d.colIdxs,inBuffer_d.nnz* sizeof(unsigned int), cudaMemcpyDeviceToHost);
-
-		// //cudaMemcpy(inBuffer->colIdxs,inBuffer_d.colIdxs,inBuffer_d.nnz*sizeof(unsigned int),cudaMemcpyDeviceToHost);
-
-		// cudaDeviceSynchronize();
-
-
-
-		// FILE* f = fopen("./binning_gpu.txt","w");
-
-		// for(int i =0; i<inBuffer->numRows;++i){
-
-		// 	fprintf(f,"%d :\n",i);
-		// 	int rowPtr = rowPtrstmp[i];
-		// 	int nnz = rowPtrstmp[i+1]-rowPtrstmp[i];
-
-		// 	for(int j = rowPtr;j<rowPtr+nnz;++j){
-
-		// 		fprintf(f,"%d\n",outBuffer->colIdxs[j]);
-		// 	}
-
-		// }
-
-		// fclose(f);
-
-		// return;
 
 
 		//Sorting
