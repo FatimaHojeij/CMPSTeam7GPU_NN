@@ -1,6 +1,7 @@
 
 NVCC = nvcc
-NVCC_FLAGS = -O3 -g -G 
+NVCC_FLAGS = -O3
+
 BASE_OBJ = main.o verify.o matrix.o
 OBJ_CPU = $(BASE_OBJ) kernel_cpu.o
 OBJ_GPU0 = $(BASE_OBJ) kernel_gpu0.o
