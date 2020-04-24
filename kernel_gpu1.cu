@@ -257,29 +257,36 @@ __global__ void Binning_kernel(unsigned int* inrowIdxs, unsigned int* incolIdxs,
 
 }
 
-__global__ void  sorting_kernel( unsigned int* colIdxs, float* values,unsigned int* rowPtrs, unsigned int numRows){
+__global__ void  sorting_kernel(unsigned int* colIdxs, float* values, unsigned int* rowPtrs, unsigned int numRows) {
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 
 	if (i < numRows) {
-		unsigned int rowPtrA = rowPtrs[i];
-		unsigned int nnzA = (rowPtrs[i + 1] - rowPtrs[i]);
-		if(nnzA>0)
-			for (unsigned int j = rowPtrA; j < rowPtrA + nnzA - 1;++j) {
 
-				for (unsigned int k = rowPtrA; k < rowPtrA + nnzA - j - 1; ++k) {
-					if (colIdxs[k] > colIdxs[k + 1]) {
+		unsigned int nnzA = rowPtrs[i + 1] - rowPtrs[i];
+
+		if (nnzA > 0) {
+			for (unsigned int j = 0; j < nnzA - 1;++j) {
+
+				for (unsigned int k = 0; k < nnzA - j - 1; ++k) {
+
+					unsigned int l_0 = k + rowPtrs[i];
+					unsigned int l_1 = l_0 + 1;
+
+					if (colIdxs[l_0] > colIdxs[l_1]) {
 						//swap col
-						unsigned int tmp = colIdxs[k];
-						colIdxs[k] = colIdxs[k + 1];
-						colIdxs[k + 1] = tmp;
+						unsigned int tmp = colIdxs[l_0];
+						colIdxs[l_0] = colIdxs[l_1];
+						colIdxs[l_1] = tmp;
 						//swap float
-						float valtmp = values[k];
-						values[k] = values[k + 1];
-						values[k + 1] = valtmp;
+						float valtmp = values[l_0];
+						values[l_0] = values[l_1];
+						values[l_1] = valtmp;
 					}
 				}
 			}
-		
+		}
+
+
 	}
 
 }
@@ -472,8 +479,6 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		printf("kernel time for layer %u", layer);
 		stopTimeAndPrint(&timer, "");
-
-        break;
 		startTime(&timer);
 
 		//calling histogram to fill rowPtrs of inBuffer
