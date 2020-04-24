@@ -9,72 +9,59 @@
 #define YMAX 32
 
 void spmspm(CSRMatrix *result, CSRMatrix *A, CSCMatrix *B, float bias) {
-	unsigned int nnzIdx = 0;
-    for(unsigned int r = 0; r < A->numRows; r++) { //loops over the rows of A
+    unsigned int nnzIdx= 0;
+    for(unsigned int r = 0; r < A->numRows; r++) {
         unsigned int rowPtrA = A->rowPtrs[r];
         unsigned int nnzA = A->rowPtrs[r + 1] - rowPtrA;
-        if(nnzA>0) { // if a row is not all zeros , we do computation otherwise we skip row
+        if(nnzA>0) {
             unsigned int* colIdxsA = A->colIdxs + rowPtrA;
             float* valueA = A->values + rowPtrA;
-            for(unsigned int c = 0; c < B->numCols; c++) { // loops over the columns of B
+            for(unsigned int c = 0; c < B->numCols; c++) {
                 unsigned int colPtrB = B->colPtrs[c];
                 unsigned int nnzB = B->colPtrs[c + 1] - colPtrB;
-                if(nnzB>0) { // if a col in B is not all zeros, we do computation otherwise skip
+                if(nnzB>0) {
                     unsigned int* rowIdxsB = B->rowIdxs + colPtrB;
                     float* valueB = B->values + colPtrB;
                     // Loop and find intersection
                     float sum = 0.0f;
                     unsigned int ia = 0, ib = 0;
-                    while(ia < nnzA && ib < nnzB) { // loops over all non zeros from A and B and stop when there is no more non zero
-                        unsigned int colIdx = colIdxsA[ia]; //single item col index from A
-                        unsigned int rowIdx = rowIdxsB[ib]; //single item row index from B
+                    while(ia < nnzA && ib < nnzB) {
+                        unsigned int colIdx = colIdxsA[ia];
+                        unsigned int rowIdx = rowIdxsB[ib];
                         if(colIdx < rowIdx) {
                             ia++;
                         } else if(colIdx > rowIdx) {
                             ib++;
                         } else {
-                            sum += valueA[ia]*valueB[ib];// do the multiplication of the row that matches the column 
+                            sum += valueA[ia]*valueB[ib];
                             ia++;
                             ib++;
                         }
                     }
 
-					//RELU SECTION HERE
-					
-					//do not add to result everything that is smaller than 0 (if u put in RELU everything smaller than 0 will become 0)
-                    if(sum > THRESHOLD || sum < -THRESHOLD) { //if not smaller than abs(threshold)
-                        sum += bias; //add to it the bias
+                    if(sum > THRESHOLD || sum < -THRESHOLD) {
+                        sum += bias;
                         //Remove negative and zero values
-                        if(sum > 0) {//if end result is positive otherwise I also do not want to add it to result
-							if(sum>YMAX) { //make sure it is on an upper limit
+                        if(sum > 0) {
+                            if(sum>YMAX) {
                                 sum = YMAX;
                             }
-                            if(nnzIdx >= result->capacity) { // if you fill the whole capacity for the result
-                                expandCSRCapacity(result, 2*result->capacity);//expand result by double it's original capacity
+                            if(nnzIdx >= result->capacity) {
+                                expandCSRCapacity(result, 2*result->capacity);
                             }
                             result->colIdxs[nnzIdx] = c;
                             result->values[nnzIdx] = sum;
-                            ++nnzIdx; //counts how many non zero elements I have 
-                        }    
+                            ++nnzIdx;
+                        }
                     }
-
                 }
             }
         }
-
-		/*
-		rowptr:		0		3		5		(set in outer for loop, calculated in inner for loop)
-		col:		2 3 5	2 4		1 4
-		values:		1 2 3	1 2		4 5	
-
-		*/
-
-        result->rowPtrs[r + 1] = nnzIdx;//takes care of row ptr for result ()
+        result->rowPtrs[r + 1] = nnzIdx;
     }
     result->nnz = nnzIdx;
 }
 
-//converts from CSRMatrix to Vector and a vector of indices where the row is not all zeros
 void findNonzeroRows(Vector* v, CSRMatrix* A) {
     unsigned int nnz = 0;
     for(unsigned int r = 0; r < A->numRows; ++r) {
@@ -97,7 +84,8 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
     // Convert featureVectors to CSR
     startTime(&timer);
-    CSRMatrix* Y0 = createCSRfromCOO(featureVectors);
+    CSRMatrix* Y0 = createEmptyCSR(featureVectors->numRows, featureVectors->numCols, featureVectors->nnz);
+    convertCOOtoCSR(featureVectors, Y0);
     stopTimeAndPrint(&timer, "Convert feature vectors to CSR");
 
     // Convert layer weights to CSC
@@ -114,7 +102,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
     CSRMatrix *inBuffer  = Y0;
     CSRMatrix *outBuffer = tmp;
     stopTimeAndPrint(&timer, "Allocate temporary buffer");
-        
+
     // Loop over layers
     for(unsigned int layer = 0; layer < numLayers; ++layer) {
 
@@ -123,34 +111,12 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
         startTime(&timer);
         spmspm(outBuffer, inBuffer, W[layer], bias);
         stopTimeAndPrint(&timer, "");
+        printf("    Output matrix number of nonzeros: %d\n", outBuffer->nnz);
 
         // Swap buffers
         CSRMatrix *t = inBuffer;
         inBuffer = outBuffer;
-
-        FILE* f = fopen("./binning_cpu.txt","w");
-
-		for(int i =0; i<inBuffer->numRows;++i){
-
-			fprintf(f,"%d :\n",i);
-			int rowPtr = inBuffer->rowPtrs[i];
-			int nnz = inBuffer->rowPtrs[i+1]-inBuffer->rowPtrs[i];
-
-			for(int j = rowPtr;j<rowPtr+nnz;++j){
-
-				fprintf(f,"%d\n",inBuffer->colIdxs[j]);
-			}
-
-		}
-
-		fclose(f);
-
-		return;
-
-
         outBuffer = t;
-
-
 
     }
 
