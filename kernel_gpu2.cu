@@ -4,7 +4,6 @@
 #include <stdlib.h>*/
 
 
-// row+1; swapping; nnzidx; syncthreads
 #include <stdio.h>
 
 #include "kernel.h"
@@ -19,7 +18,6 @@
 #define CAPACITY 25498020
 #define COARSE_FACTOR 100
 
-//__constant__ unsigned int u_Max;
 
 __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, unsigned int* nnz_out) {
 	//unsigned int r = blockIdx.y*blockDim.y + threadIdx.y;
