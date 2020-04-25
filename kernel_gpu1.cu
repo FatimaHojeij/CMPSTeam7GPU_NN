@@ -3,8 +3,6 @@
 
 #include <stdlib.h>*/
 
-
-// row+1; swapping; nnzidx; syncthreads
 #include <stdio.h>
 
 #include "kernel.h"
@@ -454,7 +452,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 	for (unsigned int layer = 0; layer < numLayers; ++layer) {
 
 		// SpMSpM
-		printf("Computing layer %u (SpMSpM)", layer);
+		printf("Computing layer %u (SpMSpM)\n", layer);
 		startTime(&timer);
 
 
@@ -466,10 +464,12 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		cudaDeviceSynchronize();
 
+
+		printf("kernel time for layer %u", layer);
 		stopTimeAndPrint(&timer, "");
 
 		cudaMemcpy(out_nnz_h, out_nnz_d, sizeof(unsigned int), cudaMemcpyDeviceToHost);
-		printf("nnz %d\n", *out_nnz_h);
+		// printf("nnz %d\n", *out_nnz_h);
 
 
 		inBuffer_d.nnz = *out_nnz_h;
@@ -477,8 +477,6 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		cudaDeviceSynchronize();
 
-		printf("kernel time for layer %u", layer);
-		stopTimeAndPrint(&timer, "");
 		startTime(&timer);
 
 		//calling histogram to fill rowPtrs of inBuffer
@@ -492,11 +490,6 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		histogram_private_kernel << < numBlocks, numThreadsPerBlock >> > (out_rowIdxs_d, rowPtrstmp_d, *out_nnz_h, inBuffer_d.numRows);
 
 		cudaDeviceSynchronize();
-
-		printf("Histogram time for layer %u", layer);
-		stopTimeAndPrint(&timer, "");
-
-		startTime(&timer);
 
 		//calling the scan kernel to scan kernel ptrs
 		const unsigned int numElementsPerBlock = 2 * numThreadsPerBlock;
@@ -527,17 +520,13 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 				
 
 		//used to check if scan and histogram same as nnz of kernel
-		cudaMemcpy(rowPtrstmp, inBuffer_d.rowPtrs, sizeof(unsigned int) * (inBuffer_d.numRows + 1), cudaMemcpyDeviceToHost);
+		// cudaMemcpy(rowPtrstmp, inBuffer_d.rowPtrs, sizeof(unsigned int) * (inBuffer_d.numRows + 1), cudaMemcpyDeviceToHost);
 
-		printf("test %u\n", rowPtrstmp[inBuffer_d.numRows]);
-
+		// printf("test %u\n", rowPtrstmp[inBuffer_d.numRows]);
 		// Free memory
 
 		cudaFree(partialSums_d);
 
-		printf("Scan time for layer %u", layer);
-		stopTimeAndPrint(&timer, "");
-		startTime(&timer);
 
 		//Binning
 		for(unsigned int i=0; i<inBuffer_d.numRows+1;i++){
