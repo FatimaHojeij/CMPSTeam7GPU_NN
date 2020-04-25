@@ -89,7 +89,7 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
 
     unsigned int tid = threadIdx.x*blockDim.x + threadIdx.y; 
     if(tid < threads*threads && tid < nnz_s){
-        nnzIndxTemp = atomicAdd(nnz_out, 1);
+        unsigned int nnzIndxTemp = atomicAdd(nnz_out, 1);
         result->rowIdxs[nnzIndxTemp] = rowIdxs_s[tid];
         result->colIdxs[nnzIndxTemp] = colIdxs_s[tid];
         result->values[nnzIndxTemp] = values_s[tid];
