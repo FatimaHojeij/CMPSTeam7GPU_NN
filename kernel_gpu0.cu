@@ -431,7 +431,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 	for (unsigned int layer = 0; layer < numLayers; ++layer) {
 
 		// SpMSpM
-		printf("Computing layer %u (SpMSpM)", layer);
+		printf("Computing layer %u (SpMSpM)\n", layer);
 		startTime(&timer);
 
 
@@ -471,11 +471,6 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		cudaDeviceSynchronize();
 
-		// printf("Histogram time for layer %u", layer);
-		// stopTimeAndPrint(&timer, "");
-
-		// startTime(&timer);
-
 		//calling the scan kernel to scan kernel ptrs
 		const unsigned int numElementsPerBlock = 2 * numThreadsPerBlock;
 		numBlocks = ((inBuffer_d.numRows + 1) + numElementsPerBlock - 1) / numElementsPerBlock;
@@ -513,9 +508,6 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		cudaFree(partialSums_d);
 
-		// printf("Scan time for layer %u", layer);
-		// stopTimeAndPrint(&timer, "");
-		// startTime(&timer);
 
 		//Binning
 		for (unsigned int i = 0; i < inBuffer_d.numRows + 1;i++) {
