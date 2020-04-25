@@ -19,9 +19,9 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
 	unsigned int r = blockIdx.y*blockDim.y + threadIdx.y;
 	unsigned int c = blockIdx.x*blockDim.x + threadIdx.x;
 
-    __shared__ unsigned int rowIdxs_s [blockDim.x*blockDim.y];
-    __shared__ unsigned int colIdxs_s [blockDim.x*blockDim.y];
-    __shared__ float values_s [blockDim.x*blockDim.y];
+    __shared__ unsigned int rowIdxs_s [threads*threads];
+    __shared__ unsigned int colIdxs_s [threads*threads];
+    __shared__ float values_s [threads*threads];
     __shared__ unsigned int nnz_s;
 
     if(threadIdx.x == 0 && threadIdx.y == 0){
@@ -67,7 +67,7 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
                     }
                     
                     unsigned int nnzIndxTemp = atomicAdd(&nnz_s, 1); //counts how many non zero elements I have
-                    if(nnzIndxTemp < blockDim.x*blockDim.y){
+                    if(nnzIndxTemp < threads*threads){
 					    rowIdxs_s[nnzIndxTemp] = r;
 					    colIdxs_s[nnzIndxTemp] = c;
                         values_s[nnzIndxTemp] = sum;
@@ -86,9 +86,9 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
     }
     
     __syncthreads();
-    
+
     unsigned int tid = threadIdx.x*blockDim.x + threadIdx.y; 
-    if(tid < blockDim.x*blockDim.y && tid < nnz_s){
+    if(tid < threads*threads && tid < nnz_s){
         nnzIndxTemp = atomicAdd(nnz_out, 1);
         result->rowIdxs[nnzIndxTemp] = rowIdxs_s[tid];
         result->colIdxs[nnzIndxTemp] = colIdxs_s[tid];
