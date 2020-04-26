@@ -74,7 +74,7 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
                             sum = YMAX;
                         }
  
-                        if(nnzIndxTemp < threads*threads*COARSE_FACTOR){
+                        if(nnz_s < threads*threads*COARSE_FACTOR){
 							unsigned int nnzIndxTemp = atomicAdd(&nnz_s, 1); //counts how many non zero elements I have
                             rowIdxs_s[nnzIndxTemp] = r;
                             colIdxs_s[nnzIndxTemp] = c;
