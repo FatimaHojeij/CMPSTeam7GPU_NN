@@ -25,9 +25,9 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
     unsigned int segmenty = COARSE_FACTOR*blockDim.y*blockIdx.y;
     unsigned int row = segmenty + threadIdx.y;
 
-    __shared__ unsigned int rowIdxs_s [threads*threads*COARSE_FACTOR];
-    __shared__ unsigned int colIdxs_s [threads*threads*COARSE_FACTOR];
-    __shared__ float values_s [threads*threads*COARSE_FACTOR];
+    __shared__ unsigned int rowIdxs_s [threads*threads];
+    __shared__ unsigned int colIdxs_s [threads*threads];
+    __shared__ float values_s [threads*threads];
     __shared__ unsigned int nnz_s;
 
     if(threadIdx.x == 0 && threadIdx.y == 0){
@@ -74,7 +74,7 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
                             sum = YMAX;
                         }
  
-                        if(nnz_s < threads*threads*COARSE_FACTOR){
+                        if(nnz_s < threads*threads){
 							unsigned int nnzIndxTemp = atomicAdd(&nnz_s, 1); //counts how many non zero elements I have
                             rowIdxs_s[nnzIndxTemp] = r;
                             colIdxs_s[nnzIndxTemp] = c;
@@ -99,14 +99,13 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
     unsigned int tid = threadIdx.x*blockDim.x + threadIdx.y; 
     if(tid < threads*threads && tid < nnz_s){
 
-        for(unsigned int cr= 0 ; cr<COARSE_FACTOR;++cr){
-            if(tid + cr*threads < threads*threads*COARSE_FACTOR && tid + cr*threads < nnz_s){
-                unsigned int nnzIndxTemp = atomicAdd(nnz_out, 1);
-                result->rowIdxs[nnzIndxTemp] = rowIdxs_s[tid + cr*threads*threads];
-                result->colIdxs[nnzIndxTemp] = colIdxs_s[tid+ cr*threads*threads];
-                result->values[nnzIndxTemp] = values_s[tid+ cr*threads*threads];
-            }
-        }
+ 
+		unsigned int nnzIndxTemp = atomicAdd(nnz_out, 1);
+		result->rowIdxs[nnzIndxTemp] = rowIdxs_s[tid];
+		result->colIdxs[nnzIndxTemp] = colIdxs_s[tid];
+		result->values[nnzIndxTemp] = values_s[tid];
+
+        
 
     }
 
@@ -477,7 +476,7 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 	for (unsigned int layer = 0; layer < numLayers; ++layer) {
 
 		// SpMSpM
-		printf("Computing layer %u (SpMSpM)", layer);
+		printf("Computing layer %u (SpMSpM)\n", layer);
 		startTime(&timer);
 
 
@@ -489,19 +488,19 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 
 		cudaDeviceSynchronize();
 
+
+		printf("kernel time for layer %u", layer);
 		stopTimeAndPrint(&timer, "");
 
+
 		cudaMemcpy(out_nnz_h, out_nnz_d, sizeof(unsigned int), cudaMemcpyDeviceToHost);
-		printf("nnz %d\n", *out_nnz_h);
+		//printf("nnz %d\n", *out_nnz_h);
 
 
 		inBuffer_d.nnz = *out_nnz_h;
 		inBuffer_d.numCols = W_d[layer].numCols;
 
 		cudaDeviceSynchronize();
-
-		printf("kernel time for layer %u", layer);
-		stopTimeAndPrint(&timer, "");
 
 		startTime(&timer);
 
@@ -516,11 +515,6 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		histogram_private_kernel << < numBlocks, numThreadsPerBlock >> > (out_rowIdxs_d, rowPtrstmp_d, *out_nnz_h, inBuffer_d.numRows);
 
 		cudaDeviceSynchronize();
-
-		printf("Histogram time for layer %u", layer);
-		stopTimeAndPrint(&timer, "");
-
-		startTime(&timer);
 
 		//calling the scan kernel to scan kernel ptrs
 		const unsigned int numElementsPerBlock = 2 * numThreadsPerBlock;
@@ -550,18 +544,9 @@ void sparseNN(Vector* result, COOMatrix* featureVectors, COOMatrix** layerWeight
 		cudaDeviceSynchronize();
 
 
-		//used to check if scan and histogram same as nnz of kernel
-		cudaMemcpy(rowPtrstmp, inBuffer_d.rowPtrs, sizeof(unsigned int) * (inBuffer_d.numRows + 1), cudaMemcpyDeviceToHost);
-
-		printf("test %u\n", rowPtrstmp[inBuffer_d.numRows]);
-
 		// Free memory
 
 		cudaFree(partialSums_d);
-
-		printf("Scan time for layer %u", layer);
-		stopTimeAndPrint(&timer, "");
-		startTime(&timer);
 
 		//Binning
 		for (unsigned int i = 0; i < inBuffer_d.numRows + 1;i++) {
