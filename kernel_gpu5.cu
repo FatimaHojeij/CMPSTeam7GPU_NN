@@ -107,9 +107,9 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
         unsigned int activePreviousThreads = activeThreads & previousThreads;
         unsigned int offset = __popc(activePreviousThreads);
         // Store the result
-        result->rowIdxs[nnzIndxTemp] = rowIdxs_s[tid];
-        result->colIdxs[nnzIndxTemp] = colIdxs_s[tid];
-        result->values[nnzIndxTemp] = values_s[tid];
+        result->rowIdxs[nnzIndxTemp + offset] = rowIdxs_s[tid];
+        result->colIdxs[nnzIndxTemp + offset ] = colIdxs_s[tid];
+        result->values[nnzIndxTemp + offset] = values_s[tid];
     }
 
 }
