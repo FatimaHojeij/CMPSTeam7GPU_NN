@@ -22,7 +22,7 @@ EXE_GPU5 = spnn_gpu5
 EXE_GPU6 = spnn_gpu6
 EXE_GPU7 = spnn_gpu7
 
-default: $(EXE_CPU) $(EXE_GPU0) $(EXE_GPU1) $(EXE_GPU2) $(EXE_GPU3)
+default: $(EXE_CPU) $(EXE_GPU0) $(EXE_GPU1) $(EXE_GPU2) $(EXE_GPU3) $(EXE_GPU4) $(EXE_GPU5) $(EXE_GPU6) $(EXE_GPU7)
 
 %.o: %.cu
 	$(NVCC) $(NVCC_FLAGS) -c -o $@ $<
