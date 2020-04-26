@@ -16,7 +16,7 @@
 #define threads 32
 #define BLOCK_DIM 1024
 #define CAPACITY 25498020
-#define COARSE_FACTOR 2
+#define COARSE_FACTOR 50
 #define WARP_SIZE 32
 
 __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, unsigned int* nnz_out) {
@@ -73,13 +73,14 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
                         if (sum > YMAX) { //make sure it is on an upper limit
                             sum = YMAX;
                         }
-                        unsigned int nnzIndxTemp = atomicAdd(&nnz_s, 1); //counts how many non zero elements I have
+ 
                         if(nnzIndxTemp < threads*threads*COARSE_FACTOR){
+							unsigned int nnzIndxTemp = atomicAdd(&nnz_s, 1); //counts how many non zero elements I have
                             rowIdxs_s[nnzIndxTemp] = r;
                             colIdxs_s[nnzIndxTemp] = c;
                             values_s[nnzIndxTemp] = sum;
                         }else{
-                            nnzIndxTemp = atomicAdd(nnz_out, 1);
+                            unsigned int nnzIndxTemp = atomicAdd(nnz_out, 1);
                             result->rowIdxs[nnzIndxTemp] = r;
                             result->colIdxs[nnzIndxTemp] = c;
                             result->values[nnzIndxTemp] = sum;
@@ -99,11 +100,11 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
     if(tid < threads*threads && tid < nnz_s){
 
         for(unsigned int cr= 0 ; cr<COARSE_FACTOR;++cr){
-            if(tid + cr*threads < nnz_s){
+            if(tid + cr*threads < threads*threads*COARSE_FACTOR && tid + cr*threads < nnz_s){
                 unsigned int nnzIndxTemp = atomicAdd(nnz_out, 1);
-                result->rowIdxs[nnzIndxTemp] = rowIdxs_s[tid + cr*threads];
-                result->colIdxs[nnzIndxTemp] = colIdxs_s[tid+ cr*threads];
-                result->values[nnzIndxTemp] = values_s[tid+ cr*threads];
+                result->rowIdxs[nnzIndxTemp] = rowIdxs_s[tid + cr*threads*threads];
+                result->colIdxs[nnzIndxTemp] = colIdxs_s[tid+ cr*threads*threads];
+                result->values[nnzIndxTemp] = values_s[tid+ cr*threads*threads];
             }
         }
 
