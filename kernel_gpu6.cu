@@ -17,7 +17,7 @@
 #define BLOCK_DIM 1024
 #define CAPACITY 25498020
 #define COARSE_FACTOR 100
-
+#define WARP_SIZE 32
 
 __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, unsigned int* nnz_out) {
 

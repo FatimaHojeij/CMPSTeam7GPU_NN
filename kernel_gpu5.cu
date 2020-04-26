@@ -12,8 +12,8 @@
 #define threads 32
 #define BLOCK_DIM 1024
 #define CAPACITY 25498020
+#define WARP_SIZE 32
 
-//__constant__ unsigned int u_Max;
 
 __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, unsigned int* nnz_out) {
 	unsigned int r = blockIdx.y*blockDim.y + threadIdx.y;
