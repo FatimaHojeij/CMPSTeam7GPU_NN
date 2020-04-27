@@ -1,4 +1,5 @@
 
+// row+1; swapping; nnzidx; syncthreads
 #include <stdio.h>
 
 #include "kernel.h"
@@ -12,6 +13,7 @@
 #define BLOCK_DIM 1024
 #define CAPACITY 25498020
 
+//__constant__ unsigned int u_Max;
 
 __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, unsigned int* nnz_out) {
 	unsigned int r = blockIdx.y*blockDim.y + threadIdx.y;
@@ -85,6 +87,7 @@ __global__ void spmspm(COOMatrix *result, CSRMatrix A, CSCMatrix B, float bias, 
     
     __syncthreads();
 
+
     //unsigned int tid = threadIdx.x*blockDim.x + threadIdx.y; 
     if(threadIdx.x == 0 && threadIdx.y == 0){
 		unsigned int nnzIndxTemp = atomicAdd(nnz_out, nnz_s);
@@ -112,154 +115,6 @@ __global__ void histogram_private_kernel(unsigned int* rowIdxs, unsigned int* ro
 	}
 
 
-
-}
-
-
-__global__ void scan_kernel(unsigned int* input, unsigned int* output, unsigned int* partialSums, unsigned int N) {
-
-	// TODO
-
-
-	unsigned int segment = 2 * blockDim.x * blockIdx.x;
-	unsigned int i = segment + threadIdx.x;
-
-	__shared__ unsigned int input_s[2 * BLOCK_DIM];
-
-	int tid = threadIdx.x;
-
-
-	if (i < N)
-	{
-		input_s[tid] = input[i];
-	}
-	else
-	{
-		input_s[tid] = 0;
-	}
-	if (i + BLOCK_DIM < N)
-	{
-		input_s[tid + BLOCK_DIM] = input[i + BLOCK_DIM];
-	}
-	else
-	{
-		input_s[tid + BLOCK_DIM] = 0;
-	}
-	__syncthreads();
-
-
-	//reduction step
-	for (unsigned int stride = 1; stride <= BLOCK_DIM; stride *= 2)
-	{
-		int index = (threadIdx.x + 1) * 2 * stride - 1;
-		if (index < 2 * BLOCK_DIM)
-			input_s[index] += input_s[index - stride];
-		__syncthreads();
-	}
-
-	//save partial sum
-	if (threadIdx.x == 0)
-	{
-		partialSums[blockIdx.x] = input_s[2 * BLOCK_DIM - 1];
-		input_s[2 * BLOCK_DIM - 1] = 0.0f;
-
-	}
-
-	__syncthreads();
-
-	//post reduction step
-	for (unsigned int stride = BLOCK_DIM; stride > 0; stride /= 2)
-	{
-		int index = (threadIdx.x + 1) * 2 * stride - 1;
-
-		if (index < 2 * BLOCK_DIM)
-		{
-			//add then swap
-			unsigned int temp = input_s[index];
-			input_s[index] += input_s[index - stride];
-			input_s[index - stride] = temp;
-		}
-
-		__syncthreads();
-	}
-
-
-	if (i < N)
-	{
-		output[i] = input_s[tid];
-	}
-	if (i + BLOCK_DIM < N)
-	{
-		output[i + BLOCK_DIM] = input_s[tid + BLOCK_DIM];
-	}
-
-}
-
-__global__ void add_kernel(unsigned int* output, unsigned int* partialSums, unsigned int N) {
-
-	// TODO
-	unsigned int i = 2 * blockIdx.x*blockDim.x + threadIdx.x;
-	if (blockIdx.x != 0) {
-		if (i < N) {
-			output[i] += partialSums[blockIdx.x];
-		}
-		if (i + BLOCK_DIM < N) {
-			output[i + BLOCK_DIM] += partialSums[blockIdx.x];
-		}
-	}
-
-}
-//output_d rowptrs n = numrows +1
-void scan_gpu_d(unsigned int* input_d, unsigned int* output_d, unsigned int N) {
-
-	// Configurations
-	const unsigned int numThreadsPerBlock = BLOCK_DIM;
-	const unsigned int numElementsPerBlock = 2 * numThreadsPerBlock;
-	const unsigned int numBlocks = (N + numElementsPerBlock - 1) / numElementsPerBlock;
-
-	// Allocate partial sums
-
-	unsigned int *partialSums_d;
-	cudaMalloc((void**)&partialSums_d, numBlocks * sizeof(unsigned int));
-	cudaDeviceSynchronize();
-
-
-	scan_kernel << < numBlocks, numThreadsPerBlock >> > (input_d, output_d, partialSums_d, N);
-	cudaDeviceSynchronize();
-
-
-	// Scan partial sums then add
-	if (numBlocks > 1) {
-
-		// Scan partial sums
-		scan_gpu_d(partialSums_d, partialSums_d, numBlocks);
-
-		// Add scanned sums
-		add_kernel << < numBlocks, numThreadsPerBlock >> > (output_d, partialSums_d, N);
-
-	}
-
-	// Free memory
-	cudaFree(partialSums_d);
-	cudaDeviceSynchronize();
-
-}
-
-
-
-__global__ void Binning_kernel(unsigned int* inrowIdxs, unsigned int* incolIdxs, float* invalues, unsigned int* rowPtrs, unsigned int* colIdxs, float* values, unsigned int nnz, unsigned int numRows, unsigned int* rowPtrsBin) {
-
-	int i = threadIdx.x + blockIdx.x*blockDim.x;
-
-	if (i < nnz) {
-		unsigned int row = inrowIdxs[i];
-		unsigned int col = incolIdxs[i];
-		float val = invalues[i];
-		unsigned int init = rowPtrs[row];
-		unsigned int nnzIdx = atomicAdd(&rowPtrsBin[row], 1);
-		colIdxs[nnzIdx + init] = col;
-		values[nnzIdx + init] = val;
-	}
 
 }
 
