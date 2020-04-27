@@ -10,7 +10,7 @@ OBJ_GPU3 = $(BASE_OBJ) kernel_gpu3.o
 OBJ_GPU4 = $(BASE_OBJ) kernel_gpu4.o
 OBJ_GPU5 = $(BASE_OBJ) kernel_gpu5.o
 OBJ_GPU6 = $(BASE_OBJ) kernel_gpu6.o
-OBJ_GPU7 = $(BASE_OBJ) kernel_gpu7.o
+
 
 EXE_CPU = spnn_cpu
 EXE_GPU0 = spnn_gpu0
@@ -20,9 +20,9 @@ EXE_GPU3 = spnn_gpu3
 EXE_GPU4 = spnn_gpu4
 EXE_GPU5 = spnn_gpu5
 EXE_GPU6 = spnn_gpu6
-EXE_GPU7 = spnn_gpu7
 
-default: $(EXE_CPU) $(EXE_GPU0) $(EXE_GPU1) $(EXE_GPU2) $(EXE_GPU3) $(EXE_GPU4) $(EXE_GPU5) $(EXE_GPU6) $(EXE_GPU7)
+
+default: $(EXE_CPU) $(EXE_GPU0) $(EXE_GPU1) $(EXE_GPU2) $(EXE_GPU3) $(EXE_GPU4) $(EXE_GPU5) $(EXE_GPU6)
 
 %.o: %.cu
 	$(NVCC) $(NVCC_FLAGS) -c -o $@ $<
@@ -50,9 +50,6 @@ $(EXE_GPU5): $(OBJ_GPU5)
 
 $(EXE_GPU6): $(OBJ_GPU6)
 	$(NVCC) $(NVCC_FLAGS) $(OBJ_GPU6) -o $(EXE_GPU6)
-
-$(EXE_GPU7): $(OBJ_GPU7)
-	$(NVCC) $(NVCC_FLAGS) $(OBJ_GPU7) -o $(EXE_GPU7)
 
 clean:
 	rm -rf *.o spnn_*
