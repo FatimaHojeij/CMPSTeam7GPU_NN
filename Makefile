@@ -23,7 +23,7 @@ EXE_GPU5 = spnn_gpu5
 default: $(EXE_CPU) $(EXE_GPU0) $(EXE_GPU1) $(EXE_GPU2) $(EXE_GPU3) $(EXE_GPU4) $(EXE_GPU5)
 
 %.o: %.cu
-	$(NVCC) $(NVCC_FLAGS) -c --ptxas-options="-v" -o $@ $<
+	$(NVCC) $(NVCC_FLAGS) -c -o $@ $<
 
 $(EXE_CPU): $(OBJ_CPU)
 	$(NVCC) $(NVCC_FLAGS) $(OBJ_CPU) -o $(EXE_CPU)
